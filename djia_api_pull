@@ -1,0 +1,26 @@
+import requests
+
+class API_Query:
+    def req():
+        url = "https://apidojo-yahoo-finance-v1.p.rapidapi.com/market/get-quotes"
+        qs = "%2CKC%3DF%2C002210.KS%2CIWM%2CAMECX"
+
+        dow_thirty = [
+            "MMM", "AXP", "AAPL", "BA", "CAT", "CHEV", "CSCO", "KO", "DD",
+                      "XOM", "GE", "GS", "HD", "IMB", "INTC", "JNJ",
+                      "JPM", "MCD", "MRK", "MSFT", "NKE", "PFE", "PG"
+                      "TRV", "RTX", "UNH", "VZ", "V", "WMT"
+                      ]
+
+        for ix in range(len(dow_thirty)):
+            querystring = {"region":"US","lang":"en","symbols": dow_thirty[ix] + qs}
+            headers = {
+                'x-rapidapi-host': "apidojo-yahoo-finance-v1.p.rapidapi.com",
+                'x-rapidapi-key': "6b8450913dmsh9491db5ee817221p1ccac3jsn85b5c88fc767"
+                }
+            response = requests.request("GET", url, headers=headers, params=querystring)
+
+            print(response.text)
+
+if __name__ == '__main__':
+    API_Query.req()
