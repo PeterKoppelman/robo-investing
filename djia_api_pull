@@ -1,3 +1,6 @@
+"""Basic Framework for querying financial data."""
+
+
 import requests
 
 class API_Query:
