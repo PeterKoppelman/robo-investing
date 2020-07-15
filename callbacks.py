@@ -51,13 +51,14 @@ def sample_portfolio_callback(app):
       Output('intl_equity', 'children'),
       Output('govy_bonds', 'children'),
       Output('corp_bonds', 'children'),
-      Output('intl_bonds', 'children')],
+      Output('intl_bonds', 'children'),
+      Output('cash', 'children')],
       [Input('my-age', 'value'),
       Input('risk-tolerance-slider', 'value'),
       Input('my-amount', 'value')]
    )
 
-   def portfolio(age, risk_tolerance, amount):
+   def portfolio(age, risk_tolerance, account_bal):
       # create portfolio based on age and risk tolerance
       # first item in each list is the percentage of the portolio in the following:
       # 1) domestic equity
@@ -66,10 +67,13 @@ def sample_portfolio_callback(app):
       # 4) domestic corporate bonds
       # 5) international bonds.
       # Each list is for a group 20, 25,30, 35, 40, etc up to 65
-      account_bal = amount
-      #  # portfolio = [0.25, 0.1, 0.3, 0.1, 0.25]
-      conn = http.client.HTTPSConnection("ftlightning.fasttrack.net")
 
+      # For some reason when typing in a new value for age or account_bal we get a Nonetype error.
+      # This prevents the error.
+      if age is None or account_bal is None:
+         return ['','','','','','']
+
+      conn = http.client.HTTPSConnection("ftlightning.fasttrack.net")
       conn.request("GET", "/v1/auth/login?account=300724&pass=1243OEIL&appid=F075C6E1-759C-4009-9B47-5FE284F31F55")
 
       res = conn.getresponse()
@@ -77,7 +81,6 @@ def sample_portfolio_callback(app):
 
       appid = data['appid']
       token = data['token']
-      # print(data)
 
       headers = {'appid': appid,
                   'token': token}
@@ -92,12 +95,8 @@ def sample_portfolio_callback(app):
          dic = json.loads(data)
          sec_val_list.append(dic["prices"][-1])
 
-      # The base portfolio is used when the risk tolerance is 5 (neutral)  
-      # For positions 0 - 4 see above.
-      # base_portfolio = [[55,30,5,5,5], [50,30,10,5,5], [45,30,10,10,5], [45,25,10,10,10], [40,25,15,10,10],
-      #    [40,20,15,15,10], [35,15,20,20,10], [30,15,25,20,10], [25,15,25,20,10], [25,15,30,25,5]]
 
-
+      # Determine base portfolio from age
       if (age >= 18 and age <= 22):
          portolio = reference.base_portfolio[0]
       elif (age >= 23 and age <= 27):
@@ -119,42 +118,38 @@ def sample_portfolio_callback(app):
       else:
          portfolio = reference.base_portfolio[9]
 
-      # for each increase or decrease in the risk tolerance the portfolio will move 2.5% in either a riskier
-      # direction (more equities) or more conservative (more fixed income). The 2.5% increase in risk will be 
-      # shared equally by the equity pieces of the portfolio. The 2.5% decrease in risk will be shared 
-      # equally by the domestic bond peices of the portfolio. PK 6/29/2020
-      # adj = .0125
-
+      # initialize adj_portfolio
+      adj_portfolio = [0] * len(sec_list)
+    
+      # Adjust for risk tolerance.
       if risk_tolerance < 5:
-         portfolio[0] += portfolio[0] * (-reference.adj * (5 - risk_tolerance))
-         portfolio[1] += portfolio[1] * (-reference.adj * (5 - risk_tolerance))
-         portfolio[2] += portfolio[2] * (reference.adj * (5 - risk_tolerance))
-         portfolio[3] += portfolio[3] * (reference.adj * (5 - risk_tolerance))
-         portfolio[4] += portfolio[4] * (reference.adj * (5 - risk_tolerance))
+         for i in range(len(adj_portfolio) - 1):
+            if i <= 2:
+               adj_portfolio[i] = portfolio[i] + (portfolio[i] * (-reference.adj * (5 - risk_tolerance)))
+            else:
+               adj_portfolio[i] = portfolio[i] + (portfolio[i] * (reference.adj * (5 - risk_tolerance)))
       elif risk_tolerance > 5:
-         portfolio[0] += portfolio[0] * (reference.adj * (risk_tolerance - 5))
-         portfolio[1] += portfolio[1] * (reference.adj * (risk_tolerance - 5))
-         portfolio[2] += portfolio[2] * (-reference.adj * (risk_tolerance - 5))
-         portfolio[3] += portfolio[3] * (-reference.adj * (risk_tolerance - 5))
-         portfolio[4] += portfolio[4] * (-reference.adj * (risk_tolerance - 5))
+         for i in range(len(adj_portfolio) - 1):
+            if i <= 1:
+               adj_portfolio[i] = portfolio[i] + (portfolio[i] * (reference.adj * (risk_tolerance - 5)))
+            else:
+               adj_portfolio[i] = portfolio[i] + (portfolio[i] * (-reference.adj * (risk_tolerance - 5)))
+      else:        # risk_tolerance = 5
+         adj_portfolio = portfolio
+
+      # Number of sharees of each security.
+      dom_stock  = int((account_bal * adj_portfolio[0]/100) / sec_val_list[0])
+      gov_bond  = int((account_bal * adj_portfolio[1]/100) / sec_val_list[1])
+      int_stock  = int((account_bal * adj_portfolio[2]/100) / sec_val_list[2])
+      int_bond  = int((account_bal * adj_portfolio[3]/100) / sec_val_list[3])
+      corp_bond  = int(account_bal * adj_portfolio[4]/100 / sec_val_list[4])
+      cash = account_bal - ((dom_stock * sec_val_list[0]) + (gov_bond * sec_val_list[1]) + 
+         (int_stock * sec_val_list[2]) + (int_bond * sec_val_list[3]) + (corp_bond * sec_val_list[4]))
 
 
-      dom_stock  = int((account_bal * portfolio[0]) / sec_val_list[0])
-      dom_stock_rem = portfolio[0] * account_bal - (dom_stock * sec_val_list[0])
-      gov_bond  = int((account_bal * portfolio[1]) / sec_val_list[1])
-      gov_bond_rem = portfolio[1] * account_bal - (gov_bond * sec_val_list[1])
-      int_stock  = int((account_bal * portfolio[2]) / sec_val_list[2])
-      int_stock_rem = portfolio[2] * account_bal - (int_stock * sec_val_list[2])
-      int_bond  = int((account_bal * portfolio[3]) / sec_val_list[3])
-      int_bond_rem = portfolio[3] * account_bal - (int_bond * sec_val_list[3])
-      corp_bond  = int(account_bal * portfolio[4] / sec_val_list[4])
-      corp_bond_rem = portfolio[4] * account_bal - (corp_bond * sec_val_list[4])
-      ttl_rem = dom_stock_rem + gov_bond_rem + int_stock_rem + int_bond_rem + corp_bond_rem
-      rem_spy = ttl_rem / sec_val_list[5]
-
-
-      return ('${:,.2f}'.format(portfolio[0]/100 * amount), 
-         '${:,.2f}'.format(portfolio[1]/100 * amount), 
-         '${:,.2f}'.format(portfolio[2]/100 * amount), 
-         '${:,.2f}'.format(portfolio[3]/100 * amount), 
-         '${:,.2f}'.format(portfolio[4]/100 * amount))
+      return ('{} shares at ${:,.2f} per share or ${:,.2f}'.format(dom_stock, sec_val_list[0], dom_stock * sec_val_list[0]),
+      '{} shares at ${:,.2f} per share or ${:,.2f}'.format(gov_bond, sec_val_list[1], gov_bond * sec_val_list[1]),
+      '{} shares at ${:,.2f} per share or ${:,.2f}'.format(int_stock, sec_val_list[2], int_stock * sec_val_list[2]),
+      '{} shares at ${:,.2f} per share or ${:,.2f}'.format(int_bond, sec_val_list[3], int_bond * sec_val_list[3]),
+      '{} shares at ${:,.2f} per share or ${:,.2f}'.format(corp_bond, sec_val_list[4], corp_bond * sec_val_list[4]),
+      '${:,.2f}'.format(cash))
