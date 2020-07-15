@@ -114,12 +114,13 @@ def sample_portfolio_layout(app):
 
         html.Br(),
         html.Br(),
-        html.Div(children = ['Your recommended portfolio is as follows:',
-            html.Tr([html.Td(['Domestic Equity:']), html.Td(id = 'domestic_equity')]),
-            html.Tr([html.Td(['International Equity:']), html.Td(id = 'intl_equity')]),
-            html.Tr([html.Td(['Government Bonds:']), html.Td(id = 'govy_bonds')]),
-            html.Tr([html.Td(['Corporate Bonds:']), html.Td(id = 'corp_bonds')]),
-            html.Tr([html.Td(['International Bonds:']), html.Td(id = 'intl_bonds')]),
+       html.Div(children = ['Your recommended portfolio is as follows:',
+            html.Tr([html.Td(['Domestic Equity: ']), html.Td(id = 'domestic_equity')]),
+            html.Tr([html.Td(['International Equity: ']), html.Td(id = 'intl_equity')]),
+            html.Tr([html.Td(['Government Bonds: ']), html.Td(id = 'govy_bonds')]),
+            html.Tr([html.Td(['Corporate Bonds: ']), html.Td(id = 'corp_bonds')]),
+            html.Tr([html.Td(['International Bonds: ']), html.Td(id = 'intl_bonds')]),
+            html.Tr([html.Td(['Cash: ']), html.Td(id = 'cash')]),
         ], style = {'font-size': '20px'}
         )
 ])
