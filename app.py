@@ -79,22 +79,27 @@ def render_page_content(pathname):
     if pathname == '/page-1':
         return layout.welcome()
     elif pathname == "/page-2":
-        return layout.login() 
+        # callbacks.login(app)
+        return layout.login(app) 
     elif pathname == "/page-3":
-        return layout.open_account()
+        # callbacks.open_account(app)
+        return layout.open_account(app)
     elif pathname == "/page-4":
         return layout.sample_portfolio_layout(app, df_portfolio)
     elif pathname == "/page-5":
+        callbacks.contact(app)
         return layout.contact_layout(app)
     elif pathname == '/page-6':
         return layout.faq()
 
-# callbacks
-callbacks.contact(app)
+# callbacks - must be run before layout pages.
+callbacks.login(app)
+callbacks.open_account(app)
 column_names = []
 df_portfolio = pd.DataFrame(columns = column_names)
 callbacks.sample_portfolio(app, df_portfolio)
-# callbacks.login(app)
+callbacks.contact(app)
+
 
 if __name__ == "__main__":
     app.run_server(debug=True)

@@ -1,4 +1,5 @@
-# all callbacks are here
+# all callbacks for the robo investing system are here
+# Peter Koppelman July 16, 2020
 from dash.dependencies import Input, Output, State
 
 import http.client
@@ -12,77 +13,82 @@ from email.mime.text import MIMEText
 
 from apps import reference
 
-def contact(app):
-	@app.callback(
-		[Output('counter', 'children')],
-		[Input('submit-email', 'n_clicks')],
-		[State('name', 'value'),
-		State('email-addr', 'value'),
-		State('comment', 'value')]
-	)
-	def send_email(n, name, email_addr, comment):
-   		if n > 0:
-   			message = MIMEMultipart('alternative')
-   			message['Subject'] = 'Email message to the Shore-Koppelman Group'
-   			message_body = 'An email came from: '+ name+'\n' 'At email address: '+ email_addr+'\n' 'Comment: '+ comment
-   			message.attach(MIMEText(message_body, 'plain'))
+from datetime import datetime
+from sqlalchemy import Column, Date, String, create_engine
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker
+import sqlite3
 
-   			try:
-   				server = smtplib.SMTP('smtp.gmail.com', 587)
-   				server.starttls()
-   				server.login(reference.account, reference.password)
-
-   				# Sent from, sent to, message
-   				server.sendmail(email_addr, reference.recipients, message.as_string())
-   				server.quit()
-   				return [f'\nThank you, your email has been sent']
-   			except Exception as e:
-   				print('email did not send ', e)
-   				return[f'Sorry, there was a problem sending your email']
-   		else:
-   			return ['']
+import sys
+sys.path.insert(1, '/users/pkopp/python_diploma/Capstone/dev/apps')
+import reference
 
 
-# def sample_portfolio(app, portfolio):
+def login(app):
+   @app.callback(
+      Output('login_to_account', 'children'),
+      [Input('login_button', 'n_clicks')], 
+      [State('login_id', 'value'),
+      State('password', 'value')]
+   )
+
+   def customer_login(n, login_id, password):
+      return[f'thank you'] if n > 0 else ['']
+
+def open_account(app):
+   @app.callback(
+      Output('open_account_button', 'children'),
+      [Input('account_opening_button', 'n_clicks')], 
+      [State('fname', 'value'),
+      State('m_init', 'value'),
+      State('lname', 'value'),
+      State('addr', 'value'),
+      State('city', 'value'),
+      State('st', 'value'),
+      State('zipcode', 'value'),
+      State('email', 'value'),
+      State('tin', 'value'),
+      State('dob', 'value')]
+   )
+   def enter_data(n, fname, minit, lname, addr, city, st, zipcode, email, tin, dob):
+      return[f'Your information has been entered into our system'] if n > 0 else ['']
+
+
 def sample_portfolio(app, df_portfolio):
    @app.callback(
       Output('df_portfolio', 'data'),
       [Input('df_portfolio', 'value'),
       Input('my-age', 'value'),
-      Input('risk-tolerance-slider', 'value'),
-      Input('my-amount', 'value')]
+      Input('my-amount', 'value'),
+      Input('risk-tolerance-slider', 'value')]
    )
 
-   def portfolio(df_portfolio, age, risk_tolerance, account_bal):
-      # create portfolio based on age and risk tolerance
-      # first item in each list is the percentage of the portolio in the following:
-      # 1) domestic equity
-      # 2) international equity
-      # 3) domestic government bonds
-      # 4) domestic corporate bonds
-      # 5) international bonds.
-      # 6) Cash
+   def portfolio(sample_portfolio, age, account_bal, risk_tolerance):
+      '''create portfolio based on age and risk tolerance
+      first item in each list is the percentage of the portolio in the following:
+      1) domestic equity
+      2) international equity
+      3) domestic government bonds
+      4) domestic corporate bonds
+      5) international bonds.
+      6) Cash'''
 
       # For some reason when typing in a new value for age or account_bal we get a Nonetype error.
       # This prevents the error.
-
       if age is None or account_bal is None:
          return [' '] * len(reference.sec_list)
 
-      conn = http.client.HTTPSConnection("ftlightning.fasttrack.net")
-      conn.request("GET", "/v1/auth/login?account=300724&pass=1243OEIL&appid=F075C6E1-759C-4009-9B47-5FE284F31F55")
-
+      conn = reference.conn
+      conn.request(reference.x, reference.y)
       res = conn.getresponse()
       data = json.loads(res.read())
-
       appid = data['appid']
       token = data['token']
-
       headers = {'appid': appid,
                   'token': token}
- 
-      sec_val_list = []
 
+
+      sec_val_list = []
       for sec in reference.sec_list:
          conn.request("GET", "/v1/data/" + sec + "/divadjprices", headers=headers)
          res = conn.getresponse()
@@ -121,35 +127,30 @@ def sample_portfolio(app, df_portfolio):
          for i in range(len(adj_portfolio) - 1):
             risk_adjuster = -reference.adj if i<= 2 else reference.adj
             adj_portfolio[i] = portfolio[i] + (portfolio[i] * (risk_adjuster * (5 - risk_tolerance)))
-            # if i <= 2:
-            #    adj_portfolio[i] = portfolio[i] + (portfolio[i] * (-reference.adj * (5 - risk_tolerance)))
-            # else:
-            #    adj_portfolio[i] = portfolio[i] + (portfolio[i] * (reference.adj * (5 - risk_tolerance)))
+
       elif risk_tolerance > 5:
          for i in range(len(adj_portfolio) - 1):
             risk_adjuster = reference.adj if i<= 1 else -reference.adj
             adj_portfolio[i] = portfolio[i] + (portfolio[i] * (risk_adjuster * (risk_tolerance - 5)))
-            # if i <= 1:
-            #    adj_portfolio[i] = portfolio[i] + (portfolio[i] * (reference.adj * (risk_tolerance - 5)))
-            # else:
-            #    adj_portfolio[i] = portfolio[i] + (portfolio[i] * (-reference.adj * (risk_tolerance - 5)))
+
       else:        # risk_tolerance = 5
          adj_portfolio = portfolio
 
-      # if adj_portfolio does not = 100, adjustments will be off and 
-      # we will not allocate the entire amount of the portfolio properly
-      #
-      # create an adjuster that is the amount of the difference between
-      # adj_portfolio and 100. Each element except cash (which could be 0)
-      # in adj_portfolio will get adjusted in an equal percentage based on the
-      # delta between the adj_portfolio value and the amount of items in the portfolio.
-      # 
+      ''' if adj_portfolio does not = 100, adjustments will be off and 
+      we will not allocate the entire amount of the portfolio properly.
+      An adjuster is created that is the amount of the difference between
+      adj_portfolio and 100. Each element except cash (which could be 0)
+      in adj_portfolio will get adjusted in an equal percentage based on the
+      delta between the adj_portfolio value and the amount of items in the portfolio.
+      '''
       if sum(adj_portfolio) != 100:
          adjuster = (sum(adj_portfolio) - 100)/(len(adj_portfolio) - 1)
          for n in range(len(adj_portfolio) - 1):
             adj_portfolio[n] = adj_portfolio[n] - adjuster
 
-      # Number of shares of each security.
+      '''Calculate the number of shares of each security that will be purchased.
+      Only full shares can be purchased, not partial ones. For this reason, cash is 
+      the amount of money left over after the purchase''' 
       dom_stock  = int((account_bal * adj_portfolio[0]/100) / sec_val_list[0])
       gov_bond  = int((account_bal * adj_portfolio[1]/100) / sec_val_list[1])
       int_stock  = int((account_bal * adj_portfolio[2]/100) / sec_val_list[2])
@@ -165,16 +166,49 @@ def sample_portfolio(app, df_portfolio):
             ['Corporate Bonds', corp_bond, sec_val_list[4], corp_bond * sec_val_list[4]],
             ['Cash', 'N/A', 'N/A', cash]]
 
-      df_portfolio = pd.DataFrame(portfolio, columns = ['sector', 'shares', 'share price', 'total cost'])
-      return df_portfolio.to_dict('records')
+      sample_portfolio = pd.DataFrame(portfolio, columns = ['sector', 'shares', 'share price', 'total cost'])
+      return sample_portfolio.to_dict('records')
 
-# def login(app):
-#    @app.callback(
-#       [Output('counter', 'children')],
-#       [Input('id', 'value'),
-#       ('password', 'value')])
 
-#    def log_in(id, password):
-      # 1) open database table
-      # 2) check id and password - if everything is ok go to the screen
-      # with historical analysis and create time series graph and P/L
+def contact(app):
+   @app.callback(
+      [Output('email_to_recepients', 'children')],
+      [Input('submit-email', 'n_clicks')],
+      [State('name', 'value'),
+      State('email-addr', 'value'),
+      State('comment', 'value')]
+   )
+   def send_email(n, name, email_addr, comment):
+         if n > 0:
+            engine = create_engine('sqlite:///stocks.db')
+            Base = declarative_base()
+            conn = sqlite3.connect(reference.db_email)
+            c = conn.cursor()
+
+            now = str(datetime.now()).replace(':', '-').replace(' ', '-').replace('.', '-')
+            timestamp = datetime.now()
+
+            datalist = [now, timestamp, email_addr, comment, name]
+            c.execute('INSERT INTO `email_info` VALUES(?, ?, ?, ?, ?)', datalist)
+            conn.commit()
+            c.close()
+
+            message = MIMEMultipart('alternative')
+            message['Subject'] = 'Email message to the Shore-Koppelman Group'
+            message_body = 'An email came from: '+ name+'\n' 'At email address: '+ email_addr+'\n' 'Comment: '+ comment
+            message.attach(MIMEText(message_body, 'plain'))
+
+            try:
+               server = smtplib.SMTP('smtp.gmail.com', 587)
+               server.starttls()
+               server.login(reference.account, reference.password)
+
+               # Sent from, sent to, message
+               server.sendmail(email_addr, reference.recipients, message.as_string())
+               server.quit()
+               return [f'\nThank you, your email has been sent']
+            except Exception as e:
+               print('email did not send ', e)
+               return[f'Sorry, there was a problem sending your email']
+         else:
+            return ['']
