@@ -1,62 +1,46 @@
 import http.client
-import json
 from auth import appid, token
+import json
+from datetime import datetime
+from sqlalchemy import Column, Date, String, create_engine
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker
+import sqlite3
+
+
+engine = create_engine('sqlite:///roboinvest.db')
+Base = declarative_base()
+conn_sql = sqlite3.connect('roboinvest.db')
+c = conn_sql.cursor()
+now = str(datetime.now()).replace(':', '-').replace(' ', '-').replace('.', '-')
+timestamp = datetime.now()
 
 class Financial_Data:
     def ft_query():
         account_bal = 5000
-        asset_allocation = [0.25, 0.1, 0.3, 0.1, 0.25]
         conn = http.client.HTTPSConnection("ftlightning.fasttrack.net")
         headers = {
                 'appid': appid,
                 'token': token
                 }
-        sec_list = ["VOO", "PRULX", "VTIAX", "PFORX", "FDHY", "SPY"]
+        sec_list = ["VOO", "PRULX", "VTIAX", "PFORX"]
 
-        sec_val_list = []
         for sec in sec_list:
-
-            conn.request("GET", "/v1/data/" + sec + "/divadjprices", headers=headers)
-
+            sec_data = []
+            conn.request("GET", "/v1/data/" + sec + "/range?start=1%2F1%2F2000&end=7%2F20%2F2020&adj=&olhv=0", headers=headers)
             res = conn.getresponse()
             data = res.read()
             dic = json.loads(data)
-            sec_val_list.append(dic["prices"][-1])
+            for ix in range(len(dic['datarange'])):
+                list_col = []
+                list_col = [datetime.strptime(dic['datarange'][ix]['date']['strdate'], '%m/%d/%Y'), dic['datarange'][ix]['price']]
 
-        dom_stock  = int((account_bal * asset_allocation[0]) / sec_val_list[0])
-        dom_stock_rem = asset_allocation[0] * account_bal - (dom_stock * sec_val_list[0])
-        gov_bond  = int((account_bal * asset_allocation[1]) / sec_val_list[1])
-        gov_bond_rem = asset_allocation[1] * account_bal - (gov_bond * sec_val_list[1])
-        int_stock  = int((account_bal * asset_allocation[2]) / sec_val_list[2])
-        int_stock_rem = asset_allocation[2] * account_bal - (int_stock * sec_val_list[2])
-        int_bond  = int((account_bal * asset_allocation[3]) / sec_val_list[3])
-        int_bond_rem = asset_allocation[3] * account_bal - (int_bond * sec_val_list[3])
-        corp_bond  = int(account_bal * asset_allocation[4] / sec_val_list[4])
-        corp_bond_rem = asset_allocation[4] * account_bal - (corp_bond * sec_val_list[4])
-        ttl_rem = dom_stock_rem + gov_bond_rem + int_stock_rem + int_bond_rem + corp_bond_rem
-        rem_spy = ttl_rem / sec_val_list[5]
+                c.execute('CREATE TABLE IF NOT EXISTS ' + sec + '\
+                (Datetime DATE PRIMARY KEY, Price NUMERIC)')
 
-        print("Your portfolio consists of the following...")
-        print("{} shares of {} at {}.".format(dom_stock, sec_list[0], sec_val_list[0]))
-        print("{} shares of {} at {}.".format(gov_bond, sec_list[1], sec_val_list[1]))
-        print("{} shares of {} at {}.".format(int_stock, sec_list[2], sec_val_list[2]))
-        print("{} shares of {} at {}.".format(int_bond, sec_list[3], sec_val_list[3]))
-        print("{} shares of {} at {}.".format(corp_bond, sec_list[4], sec_val_list[4]))
-        print("{} shares of {} at {}.".format(round(rem_spy, 4), sec_list[5], sec_val_list[5]))
-
-        return sec_val_list
-        return dom_stock
-        return dom_stock_rem
-        return gov_bond
-        return gov_bond_rem
-        return int_stock
-        return int_stock_rem
-        return int_bond
-        return int_bond_rem
-        return corp_bond
-        return corp_bond_rem
-        return ttl_rem
-        return rem_spy
+                c.execute('INSERT INTO ' + sec + ' VALUES(?, ?)', list_col)
+                conn_sql.commit()
+        c.close()
 
 if __name__ == "__main__":
     Financial_Data.ft_query()
