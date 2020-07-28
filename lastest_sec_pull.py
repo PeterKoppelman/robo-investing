@@ -11,7 +11,7 @@ c = conn_sql.cursor()
 
 class Query_Database:
     def get_posts():
-        sec_list = sec_list = ['VOO', 'PRULX', 'VTIAX', 'PFORX']
+        sec_list = sec_list = ['VOO', 'PRULX', 'VTIAX', 'PFORX', 'FDHY']
         sec_latest_vals = []
         for sec in sec_list:
             c.execute('SELECT * FROM ' + sec + ' ORDER BY Datetime DESC LIMIT 1')
