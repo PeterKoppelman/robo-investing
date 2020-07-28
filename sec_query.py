@@ -23,7 +23,7 @@ class Financial_Data:
                 'appid': appid,
                 'token': token
                 }
-        sec_list = ["VOO", "PRULX", "VTIAX", "PFORX"]
+        sec_list = ["VOO", "PRULX", "VTIAX", "PFORX", "FDHY"]
 
         for sec in sec_list:
 
