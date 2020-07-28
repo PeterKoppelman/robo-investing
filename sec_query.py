@@ -6,7 +6,13 @@ from sqlalchemy import Column, Date, String, create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 import sqlite3
+from threading import Timer
 
+x=datetime.today()
+y=x.replace(day=x.day+1, hour=18, minute=45, second=0, microsecond=0)
+delta_t=y-x
+
+secs=delta_t.seconds+1
 
 engine = create_engine('sqlite:///roboinvest.db')
 Base = declarative_base()
@@ -46,5 +52,6 @@ class Financial_Data:
                     pass
         c.close()
 
-if __name__ == "__main__":
-    Financial_Data.ft_query()
+t = Timer(secs, Financial_Data.ft_query())
+t.start()
+    
