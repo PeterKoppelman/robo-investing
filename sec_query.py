@@ -1,5 +1,5 @@
 import http.client
-from auth import appid, token
+from reference import appid, token
 import json
 from datetime import datetime
 from sqlalchemy import Column, Date, String, create_engine
@@ -54,4 +54,3 @@ class Financial_Data:
 
 t = Timer(secs, Financial_Data.ft_query())
 t.start()
-    
