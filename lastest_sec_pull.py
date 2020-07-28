@@ -20,3 +20,4 @@ class Query_Database:
         return sec_latest_vals
 
 if __name__ == '__main__':
+    Query_Database.get_posts()
