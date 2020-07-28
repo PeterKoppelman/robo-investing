@@ -26,8 +26,9 @@ class Financial_Data:
         sec_list = ["VOO", "PRULX", "VTIAX", "PFORX"]
 
         for sec in sec_list:
+
             sec_data = []
-            conn.request("GET", "/v1/data/" + sec + "/range?start=1%2F1%2F2000&end=7%2F20%2F2020&adj=&olhv=0", headers=headers)
+            conn.request("GET", "/v1/data/" + sec + "/range?start=1%2F1%2F2000&adj=&olhv=0", headers=headers)
             res = conn.getresponse()
             data = res.read()
             dic = json.loads(data)
@@ -38,8 +39,11 @@ class Financial_Data:
                 c.execute('CREATE TABLE IF NOT EXISTS ' + sec + '\
                 (Datetime DATE PRIMARY KEY, Price NUMERIC)')
 
-                c.execute('INSERT INTO ' + sec + ' VALUES(?, ?)', list_col)
-                conn_sql.commit()
+                try:
+                    c.execute('INSERT INTO ' + sec + ' VALUES(?, ?)', list_col)
+                    conn_sql.commit()
+                except:
+                    pass
         c.close()
 
 if __name__ == "__main__":
