@@ -45,5 +45,7 @@ appid = data['appid']
 token = data['token']
 
 # setting paths and naming database table paths.
-db_path = '/users/pkopp/python_diploma/Capstone/dev/apps'
-db_email = r"C:\users\pkopp\python_diploma\Capstone\dev\database\email_info.db"
+db_path = '/users/pkopp/python_diploma/Capstone/prod/apps'
+
+database = r"C:\users\pkopp\python_diploma\Capstone\prod\database\roboinvest.db"
+
