@@ -23,7 +23,6 @@ timestamp = datetime.now()
 
 class Financial_Data:
     def ft_query():
-        account_bal = 5000
         conn = http.client.HTTPSConnection("ftlightning.fasttrack.net")
         headers = {
                 'appid': appid,
