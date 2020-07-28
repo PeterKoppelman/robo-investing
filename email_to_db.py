@@ -5,22 +5,24 @@ from sqlalchemy.orm import sessionmaker
 import sqlite3
 
 
-engine = create_engine('sqlite:///stocks.db')
+engine = create_engine('sqlite:///roboinvest.db')
 Base = declarative_base()
-conn = sqlite3.connect('email_info.db')
+conn = sqlite3.connect('roboinvest.db')
 c = conn.cursor()
 
 now = str(datetime.now()).replace(':', '-').replace(' ', '-').replace('.', '-')
+timestamp = datetime.now()
 email = 'example@gmail.com'
 email_text = 'Hello World.'
 
-datalist = [now, email, email_text]
+datalist = [now, timestamp, email, email_text]
 
 class SL_Table(Base):
     """Create the table for the database."""
 
     __tablename__ = 'Email_Info'
     Primary = Column(Date, primary_key=True)
+    Timestamp = Column(String)
     Email_Address = Column(String)
     Email_Text = Column(String)
 
@@ -32,9 +34,9 @@ class Table_Bind():
 class DB_Entry:
     def db_entry():
          c.execute('CREATE TABLE IF NOT EXISTS `Email_Info`\
-             (Primary_Key TEXT PRIMARY KEY, Email_Address TEXT, Email_Text TEXT)')
+             (Primary_Key TEXT PRIMARY KEY, Timestamp TEXT, Email_Address TEXT, Email_Text TEXT)')
 
-         c.execute('INSERT INTO `Email_Info` VALUES(?, ?, ?)', datalist)
+         c.execute('INSERT INTO `Email_Info` VALUES(?, ?, ?, ?)', datalist)
          conn.commit()
          c.close()
 
