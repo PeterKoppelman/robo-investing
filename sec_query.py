@@ -25,7 +25,6 @@ class Financial_Data:
         c = conn_sql.cursor()
         now = str(datetime.now()).replace(':', '-').replace(' ', '-').replace('.', '-')
         timestamp = datetime.now()
-
         conn = http.client.HTTPSConnection("ftlightning.fasttrack.net")
         headers = {
                 'appid': appid,
