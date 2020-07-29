@@ -30,7 +30,7 @@ adj = .0125
 
 
 # security list
-sec_list = ["VOO", "PRULX", "VTIAX", "PFORX", "FDHY", "SPY"]
+sec_list = ["VOO", "PRULX", "VTIAX", "PFORX", "FDHY"]
 
 # Database connectivity
 
@@ -45,7 +45,7 @@ appid = data['appid']
 token = data['token']
 
 # setting paths and naming database table paths.
-db_path = '/users/pkopp/python_diploma/Capstone/prod/apps'
+db_path = '/roboinvest/apps'
 
-database = r"C:\users\pkopp\python_diploma\Capstone\prod\database\roboinvest.db"
+database = r"C:\roboinvest\database\roboinvest.db"
 

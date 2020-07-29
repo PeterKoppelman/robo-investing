@@ -20,7 +20,7 @@ from sqlalchemy.orm import sessionmaker
 import sqlite3
 
 import sys
-sys.path.insert(1, '/users/pkopp/python_diploma/Capstone/dev/apps')
+sys.path.insert(1, '/roboinvest/apps')
 import reference
 
 
@@ -180,16 +180,16 @@ def contact(app):
    )
    def send_email(n, name, email_addr, comment):
          if n > 0:
-            engine = create_engine('sqlite:///stocks.db')
+            engine = create_engine('sqlite:///roboinvest.db')
             Base = declarative_base()
-            conn = sqlite3.connect(reference.db_email)
+            conn = sqlite3.connect(reference.database)
             c = conn.cursor()
 
-            now = str(datetime.now()).replace(':', '-').replace(' ', '-').replace('.', '-')
+            # now = str(datetime.now()).replace(':', '-').replace(' ', '-').replace('.', '-')
             timestamp = datetime.now()
 
-            datalist = [now, timestamp, email_addr, comment, name]
-            c.execute('INSERT INTO `email_info` VALUES(?, ?, ?, ?, ?)', datalist)
+            datalist = [name, email_addr, comment, timestamp]
+            c.execute('INSERT INTO `email_info` VALUES(?, ?, ?, ?)', datalist)
             conn.commit()
             c.close()
 
