@@ -3,7 +3,7 @@ from sqlalchemy import Column, Date, String, create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 import sqlite3
-
+from cryptography.fernet import Fernet
 
 engine = create_engine('sqlite:///roboinvest.db')
 Base = declarative_base()
@@ -16,7 +16,11 @@ email = 'email@email.com'
 login = 'user1234'
 password = 'qwerty'
 
-datalist = [now, timestamp, email, login, password]
+key = Fernet.generate_key()
+cipher_suite = Fernet(key)
+ciphered_text = cipher_suite.encrypt(b"Password")  
+
+datalist = [now, timestamp, email, login, ciphered_text]
 
 class SL_Table(Base):
     """Create the table for the database."""
