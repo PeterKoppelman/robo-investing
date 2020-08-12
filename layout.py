@@ -57,7 +57,136 @@ def welcome():
             style = {'text-align': 'center'}),
 ])
 
-def login(app):
+
+def journal_data_entry(app):
+    return html.Div([
+        html.Div([
+        html.H2('The Shore-Koppelman Group'),
+        html.H3('Robo-Investing Tool'),
+            ], style = HEADER_STYLE
+        ),
+        html.Br(),
+        html.Br(),
+        html.Br(),
+        html.H5('Enter deposit information from the Customer',
+               style = {'text-align': 'center'}),
+        html.Br(),
+        html.Form([
+            html.Br(),
+            html.H5('Account Information',
+                   style = {'font-weight ': 'bold'}
+                   ),
+                html.Label('Master Account:',
+                    style = OPEN_ACCOUNT_LABEL
+                    ),
+                dcc.Input(id = 'master_account_number', 
+                            type = 'text', 
+                            minLength = 8, 
+                            maxLength = 25,
+                            debounce = True,
+                            ),
+                html.Label('Date:',
+                    style = OPEN_ACCOUNT_LABEL
+                    ),
+                 dcc.Input(id = 'date_of_entry', 
+                            type = 'text', 
+                            minLength = 8, 
+                            maxLength = 25,
+                            debounce = True,
+                            ),
+                html.Label('Account Number:',
+                    style = OPEN_ACCOUNT_LABEL
+                    ),
+                 dcc.Input(id = 'acct_number', 
+                            type = 'text', 
+                            minLength = 0, 
+                            maxLength = 10,
+                            debounce = True,
+                            ),
+                html.Br(),
+                html.Br(),
+                html.Br(),
+                html.H5('Credit/Debit Information',
+                   style = {'font-weight ': 'bold'}
+                   ),
+                html.Label('Debit (withdrawal):',
+                    style = OPEN_ACCOUNT_LABEL
+                    ),
+                 dcc.Input(id = 'debit_amt', 
+                            type = 'text', 
+                            minLength = 5, 
+                            maxLength = 25,
+                            debounce = True,
+                            ),
+                html.Label('Credit (deposit):',
+                    style = OPEN_ACCOUNT_LABEL
+                    ),
+                 dcc.Input(id = 'credit_amt', 
+                            type = 'text', 
+                            minLength = 5, 
+                            maxLength = 25,
+                            debounce = True,
+                            ),
+                html.Label('Description:',
+                    style = OPEN_ACCOUNT_LABEL
+                    ),
+                 dcc.Input(id = 'description', 
+                            type = 'text', 
+                            minLength = 5, 
+                            maxLength = 50,
+                            debounce = True,
+                            ),
+                html.Br(),
+                html.Br(),
+                html.Br(),
+                html.H5('Employee Information',
+                     style = {'font-weight ': 'bold'}
+                     ),
+                html.Label('Last Name: ',
+                    style = OPEN_ACCOUNT_LABEL 
+                    ), 
+                dcc.Input(type = 'text',
+                        id = 'ee_lname', 
+                        minLength = 8, 
+                        maxLength = 40,
+                        debounce = True,
+                    ),
+                html.Label('Employee Number: ', 
+                    style = OPEN_ACCOUNT_LABEL
+                    ),
+                    dcc.Input(type = 'password',
+                        id = 'ee_tin', 
+                        minLength = 8, 
+                        maxLength = 25,
+                        debounce = True,
+                    ),
+                html.Label('Date of Birth: ', 
+                    style = OPEN_ACCOUNT_LABEL
+                    ),
+                dcc.Input(type = 'password',
+                        id = 'ee_dob', 
+                        minLength = 8, 
+                        maxLength = 25,
+                        debounce = True,
+                    ),
+                html.Br(),
+                html.Br(),
+                html.Div([
+                dbc.Button('Submit',
+                    id = 'journal_submit_button',
+                    color = 'primary',
+                    n_clicks = 0,
+                    className='mr-1'
+                ),
+                ], style = {'text-align': 'left'},
+            ),
+            # html.Div(id = 'journal_entry_complete')
+        ],
+    ), html.Div(id = 'journal_entry_complete')
+])
+
+
+def client_login(app):
     return html.Div([
         html.Div([
         html.H2('The Shore-Koppelman Group'),
@@ -66,37 +195,43 @@ def login(app):
     ),
     html.Br(),
     html.Br(),
-    html.H5('Login to your account',
+    html.H5('Client Login',
         style = {'text-align': 'center'}),
     html.Br(),
     html.Form([
-    html.Label('Login Id: ', 
-        style = {'font-weight': 'bold'}
+    html.Label('Last Name: ', 
         ), 
-        dcc.Input(type = 'email',
-                    id = 'login_id', 
-                    placeholder = 'Email address',
+        dcc.Input(type = 'text',
+                    id = 'client_lname', 
+                    placeholder = 'Last Name',
                     minLength = 8, 
                     maxLength = 40,
-                    inputMode = 'email',
                     debounce = True,
-                    required = True,
-                    style = {'width': 250}, 
         ),
 
     html.Br(),
     html.Br(),
-    html.Label('Password: ', 
-        style = {'font-weight': 'bold'}),
+    html.Label('TIN: ', 
+        ),
         dcc.Input(type = 'password',
-                    id = 'password', 
-                    placeholder = 'Password',
+                    id = 'client_tin', 
+                    placeholder = 'Your Tax ID Number',
                     minLength = 8, 
                     maxLength = 25,
                     debounce = True,
-                    required = True,
-                    style = {'width': 250},
         ),
+    html.Br(),
+    html.Br(),
+    html.Label('Date of Birth: ', 
+        ),
+        dcc.Input(type = 'password',
+                    id = 'client_dob', 
+                    placeholder = 'Date of Birth',
+                    minLength = 8, 
+                    maxLength = 25,
+                    debounce = True,
+        ),
+
     html.Br(),
     html.Br(),
     dbc.Button('Login',
@@ -104,12 +239,13 @@ def login(app):
         color = 'primary',
         n_clicks = 0,
         className='mr-1'
-    ), html.Div(id = 'login_to_account'),
+    ), 
     ], style = { 
         'justifyContent': 'center',
         'text-align': 'center'
         }
-    ),
+    ),html.Div(id = 'client_login_to_account', style = {'display': 'none'}),
+    # html.Div(id = 'client_data', style = {'display': 'none'})
 ])
 
 
@@ -128,9 +264,9 @@ def open_account(app):
     html.Br(),
     html.Br(),
     html.Form([
-        html.Fieldset([
+        # html.Fieldset([
         html.Label('Name',
-            style = {'font-weight': 'bold'}),
+           style = {'font-weight ': 'bold'}),
         html.Br(),
         html.Label('First Name:',
             style = OPEN_ACCOUNT_LABEL),
@@ -139,7 +275,6 @@ def open_account(app):
                     minLength = 2, 
                     maxLength = 25,
                     debounce = True,
-                    # required = True,
                     ),
         html.Label('Middle Initial:',
             style = OPEN_ACCOUNT_LABEL),
@@ -148,7 +283,6 @@ def open_account(app):
                     minLength = 0, 
                     maxLength = 2,
                     debounce = True,
-                    # required = True,
                     ),
         html.Label('Last Name:',
             style = OPEN_ACCOUNT_LABEL),
@@ -157,7 +291,6 @@ def open_account(app):
                     minLength = 2, 
                     maxLength = 25,
                     debounce = True,
-                    # required = True
                     ),
         html.Br(),
         html.Br(),
@@ -172,7 +305,6 @@ def open_account(app):
                     minLength = 2, 
                     maxLength = 25,
                     debounce = True,
-                    # required = True
                     ),
         html.Label('City:',
             style = OPEN_ACCOUNT_LABEL),
@@ -181,26 +313,23 @@ def open_account(app):
                     minLength = 2, 
                     maxLength = 25,
                     debounce = True,
-                    # required = True
                     ),
         html.Br(),
-        html.Label('State',
+        html.Label('State:',
             style = OPEN_ACCOUNT_LABEL),
          dcc.Input(id = 'st', 
                     type = 'text', 
                     minLength = 2, 
                     maxLength = 25,
                     debounce = True,
-                    # required = True
                     ),
-        html.Label('Zip Code',
+        html.Label('Zip Code:',
             style = OPEN_ACCOUNT_LABEL),
          dcc.Input(id = 'zipcode', 
                     type = 'text', 
                     minLength = 5, 
                     maxLength = 10,
                     debounce = True,
-                    # required = True
                     ),
         html.Br(),
         html.Br(),
@@ -215,7 +344,6 @@ def open_account(app):
                     minLength = 8, 
                     maxLength = 25,
                     debounce = True,
-                    # required = True
                     ),
         html.Label('Social Security or TIN number:',
             style = OPEN_ACCOUNT_LABEL),
@@ -224,7 +352,6 @@ def open_account(app):
                     minLength = 8, 
                     maxLength = 25,
                     debounce = True,
-                    # required = True
                     ),
         html.Label('Date of Birth:',
             style = OPEN_ACCOUNT_LABEL),
@@ -233,18 +360,38 @@ def open_account(app):
                     minLength = 8, 
                     maxLength = 25,
                     debounce = True,
-                    # required = True
                     ),
+
         html.Br(),
         html.Br(),
         html.Br(),
-        dbc.Button('Submit',
-            id = 'account_opening_button',
-            color = 'primary',
-            n_clicks = 0,
-            className='mr-1'
-        ), html.Div(id = 'open_account_button')
-        ]),
+        html.Label('Password has min length 8, max length 25.',
+            style = {'font-weight': 'bold'}),
+        html.Br(),
+        html.Label('Password:',
+            style = OPEN_ACCOUNT_LABEL),
+        dcc.Input(id = 'password', 
+                   type = 'password', 
+                   minLength = 8, 
+                   maxLength = 25,
+                   debounce = True,
+                ),
+        html.Br(),
+        html.Br(),
+        html.Label('Please note that our ABA routing number is 123456789 and our account number is 555-555-5555'),
+        html.Label('Call us at 1.866.555.7575 and speak to one of our operators if you have questions concerning wiring us money'),
+        html.Br(),
+        html.Div([
+            dbc.Button('Submit',
+                id = 'account_opening_button',
+                color = 'primary',
+                n_clicks = 0,
+                className='mr-1'
+            ), 
+        ], style = {'text-align': 'right'},
+        ),   
+        html.Div(id = 'open_account_button')
+        # ]), ### end fieldset
         ], style = OPEN_ACCOUNT_FORM
     ),
 ], 
@@ -315,8 +462,10 @@ def sample_portfolio_layout(app, df_portfolio):
         id='df_portfolio',
         # data = df_portfolio.to_dict('rows'),
         columns = [
-            {'name': 'Sector', 
-                'id' : 'sector'},
+            {'name': 'Security', 
+                'id' : 'security'},
+            {'name': 'Category',
+                'id': 'category'},
             {'name': 'Shares', 
                 'id' : 'shares'},
             {'name': 'Share Price', 
@@ -404,7 +553,7 @@ def contact_layout(app):
         color = 'primary',
         n_clicks = 0,
         className='mr-2'
-    ), html.Div(id = 'email_to_recepients'),
+    ), html.Div(id = 'email_to'),
 ])
 
 
