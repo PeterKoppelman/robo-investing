@@ -12,7 +12,7 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 # import email_to
 
-from apps import reference
+import reference
 
 from datetime import datetime
 from sqlalchemy import Column, Date, String, create_engine, update
