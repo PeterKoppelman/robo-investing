@@ -45,6 +45,8 @@ sidebar = html.Div(
                 dbc.NavLink("Create a sample portfolio", href="/page-4", id="page-4-link"),
                 dbc.NavLink("Contact Us", href="/page-5", id="page-5-link"),
                 dbc.NavLink("FAQ", href="/page-6", id="page-6-link"),
+                dbc.NavLink('-------------------------------'),
+                dbc.NavLink("Employee Login", href="/page-7", id="page-7-link"),
             ],
             vertical=True,
             pills=True,
@@ -62,14 +64,14 @@ app.layout = html.Div([
 # this callback uses the current pathname to set the active state of the
 # corresponding nav link to true, allowing users to tell see page they are on
 @app.callback(
-    [Output(f"page-{i}-link", "active") for i in range(1, 7)],
+    [Output(f"page-{i}-link", "active") for i in range(1, 8)],
     [Input("url", "pathname")],
 )
 def toggle_active_links(pathname):
     if pathname == "/":
         # Treat page 1 as the homepage / index
-        return True, False, False, False, False, False
-    return [pathname == f"/page-{i}" for i in range(1, 7)]
+        return True, False, False, False, False, False, False
+    return [pathname == f"/page-{i}" for i in range(1, 8)]
 
 
 @app.callback(Output("page-content", "children"), 
@@ -79,28 +81,32 @@ def render_page_content(pathname):
     if pathname == '/page-1':
         return layout.welcome()
     elif pathname == "/page-2":
-        # callbacks.login(app)
-        return layout.login(app) 
+        return layout.client_login()
     elif pathname == "/page-3":
-        # callbacks.open_account(app)
         return layout.open_account(app)
     elif pathname == "/page-4":
         return layout.sample_portfolio_layout(app, df_portfolio)
     elif pathname == "/page-5":
-        callbacks.contact(app)
-        return layout.contact_layout(app)
+       return layout.contact_layout(app)
     elif pathname == '/page-6':
         return layout.faq()
+    elif pathname == '/page-7':
+        return layout.journal_data_entry(app)
 
-# callbacks - must be run before layout pages.
-callbacks.login(app)
+# column_names = []
+# df_cust_info = pd.DataFrame(columns = column_names)
+# callbacks.present_customer_data(app, df_cust_info)
+callbacks.present_customer_data(app)
+
+callbacks.client_login(app)
+callbacks.journal_data_entry(app)
 callbacks.open_account(app)
+callbacks.contact_layout(app)
+
 column_names = []
 df_portfolio = pd.DataFrame(columns = column_names)
 callbacks.sample_portfolio(app, df_portfolio)
-callbacks.contact(app)
 
 
 if __name__ == "__main__":
     app.run_server(debug=True)
-

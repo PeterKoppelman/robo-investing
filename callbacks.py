@@ -2,6 +2,13 @@
 # Peter Koppelman July 16, 2020
 from dash.dependencies import Input, Output, State
 from dash import no_update
+from dash.exceptions import PreventUpdate
+
+
+import dash_bootstrap_components as dbc
+import dash_core_components as dcc
+import dash_html_components as html
+import dash_table
 
 import http.client
 import pandas as pd
@@ -12,7 +19,7 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 # import email_to
 
-import reference
+from apps import reference, layout
 
 from datetime import datetime
 from sqlalchemy import Column, Date, String, create_engine, update
@@ -20,125 +27,101 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 import sqlite3
 
+# import string library function  
+import string 
+
 import sys
 # sys.path.insert(1, '/roboinvest/apps')
 
-def journal_data_entry(app):
+
+# def present_customer_data(app, df_cust_info):
+def present_customer_data(app):
    @app.callback(
-      Output('journal_entry_complete', 'chilcren'),
-      [Input('journal_submit_button', 'n_clicks')], 
-      [State('master_account_number', 'value'),
-      State('date_of_entry', 'value'),
-      State('acct_number', 'value'),
-      State('debit_amt', 'value'),
-      State('credit_amt', 'value'),
-      State('description', 'value'),
-      State('ee_lname', 'value'),
-      State('ee_tin', 'value'),
-      State('ee_dob', 'value')]
+      Output('is_client', 'children'),
+      [Input('is_client', 'data-valid')],
+      [State('client_lname', 'value'),
+      State('client_tin', 'value'),
+      State('client_dob', 'value')]
    )
-   def journal_entry(n, master_account_number, date_of_entry, acct_number, debit_amt, credit_amt, 
-      description, ee_lname, ee_tin, ee_dob):
-      def validate_data(master_account_number, date_of_entry, acct_number,
-         description, ee_lname, ee_tin, ee_dob):
-         # test to see if any data is blank
-         if master_account_number is None or date_of_entry is None or acct_number is None \
-            or description is None or ee_lname is None or ee_tin is None or ee_dob is None:
-            return False
-         else:
-            return True 
+   def get_client_data(is_client, client_lname, client_tin, client_dob):
+      # if is_client is True we have a client match. 
+      # Else it is false and print applicable error message
+      if is_client is not True:
+         return is_client
 
-      # Check to make sure all required fields are entered 
-      # (see def validate_data above)
-      if n >= 1:
-         data_ok = validate_data(master_account_number, date_of_entry, acct_number,
-         description, ee_lname, ee_tin, ee_dob)
-         if not data_ok:
-            return[f'Some of the information is blank. Please make sure that all fields are filled in']
+      # Open sql engine
+      engine = create_engine('sqlite:///roboinvest.db')
+      Base = declarative_base()
+      conn = sqlite3.connect(reference.database)
+      c = conn.cursor()
 
-         # Data check for debit and credit...
-         if debit_amt is None and credit_amt is None:
-             return[f'Credit or debit amount must be greater than 0.']
-         if debit_amt is not None and credit_amt is not None:
-            return[f'Both the credit or debit amount cannot be greater than 0.']
-         # Data was entered into both the login and password fields. 
-         # Check for record in Login table
-         engine = create_engine('sqlite:///roboinvest.db')
-         Base = declarative_base()
-         conn = sqlite3.connect(reference.database)
-         c = conn.cursor()
-    
-         # Check to see if a record for this employee
-         c.execute(
-            'SELECT \
-               * \
-            FROM \
-               Employee_Master \
+      # check to see of the customer has set up an account yet
+      c.execute( \
+         'SELECT \
+            *\
+         FROM \
+         account_master \
+         Inner Join customer_master On customer_master.cust_id = account_master.master_account_id')
+
+      account_info = c.fetchall()
+      if account_info is None:
+         return "I'm sorry, an account has not been set up for this customer yet"
+
+      # Check to see if money has been deposited into the journal entry table
+      c.execute( \
+         'SELECT \
+         * \
+         FROM \
+         journal_entries \
+         Inner Join customer_master On customer_master.cust_id = journal_entries.cust_id')
+      journal_entries = c.fetchall()
+      if journal_entries is None:
+         return "I'm sorry, no money has been deposited with us yet"
+
+      # Get data to display
+      c.execute( \
+         'SELECT DISTINCT\
+            customer_master.First_name, \
+            customer_master.Middle_initial, \
+            customer_master.Last_name, \
+            account_master.account_number, \
+            account_master.account_balance, \
+            CASE \
+               when journal_entries.Debit_amount > 0 \
+               then journal_entries.Debit_amount \
+               else journal_entries.Credit_amount \
+            END last_transaction \
+         FROM \
+            customer_master \
+            Inner join account_master On \
+               account_master.master_account_id = customer_master.Cust_Id \
+            Inner join journal_entries On \
+               journal_entries.master_account_id = account_master.master_account_id \
             Where \
-               Last_name = ? and TIN = ? and DOB = ?', \
-               (ee_lname, ee_tin, ee_dob))
+               customer_master.Last_name = ? and customer_master.TIN = ? and \
+               customer_master.DOB = ?', \
+               (client_lname, client_tin, client_dob))
 
-         data_set = c.fetchall()
-         user_id = data_set[0][0]
-         # data_set is Null. We didn't find anything. Issue errror message
-         if not data_set:
-            return[f'There is no record for this employee information. Please try again.']
+      customer_information = []
+      customer_information = c.fetchall()
+      # returned value is tuple in a list. This removes the tuple.
+      # customer_information = [[item for sublist in customer_information for item in sublist]]
+      customer_information = [item for sublist in customer_information for item in sublist]
+      print(customer_information)
+      return layout.present_customer_data_layout(customer_information[0], customer_information[1],
+                     customer_information[2], customer_information[3], 
+                     customer_information[4], customer_information[5])
+      # df_cust_info = pd.DataFrame(customer_information, columns =['first_name', 'middle_initial',
+      #                'last_name', 'account_number', 'account_balance', 'last_transaction'])
+      # print('df_cust_info ', df_cust_info.to_dict('records)'))
+      # print()
+      # return df_cust_info.to_dict('records')
 
-         # Get cust_id from account_master table.
-         c.execute(\
-            'SELECT \
-               cust_id \
-            FROM \
-               customer_master \
-            Where \
-               \
-               cust_id = ?', \
-               (master_account_number))
-         cust_id = c.fetchall()
-         cust_id = cust_id[0][0]
-
-         # We've passed the tests. Write the data to the journal
-         time_stamp = datetime.now()
-         datalist = [date_of_entry, master_account_number, cust_id, acct_number, 
-            debit_amt, credit_amt, description, user_id, ' ', time_stamp]
-         c.execute('INSERT INTO `journal_entries` VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', datalist)
-         conn.commit()
-         # Get email data from customer and email them to say that we have their money
-         c.execute(\
-            'SELECT \
-               email_addr \
-            FROM \
-               Customer_Master \
-            Inner Join journal_entries On journal_entries.ee_id = Customer_Master.cust_id')
-         email = c.fetchall()
-         email_addr = email[0][0]
-
-         message = MIMEMultipart('alternative')
-         message['Subject'] = 'Email message from the Shore-Koppelman Group'
-         message_body = 'A deposit of '+credit_amt+' has been made in your account. You can purchase securities immediately'
-         message.attach(MIMEText(message_body, 'plain'))
-
-         try:
-            server = smtplib.SMTP('smtp.gmail.com', 587)
-            server.starttls()
-            server.login(reference.account, reference.password)
-            from_addr = 'Roboinvest.com'
-
-            # Sent from, sent to, message
-            server.sendmail(from_addr, email_addr, message.as_string())
-            server.quit()
-            return[f'\nAn email has been sent to the clients account alerting them to the money in their account']
-         except Exception as e:
-            print(f'email did not send ', e)
-            return['']
-      else:
-         return ['']
 
 
 def client_login(app):
    @app.callback(
-      # [Output('client_data', 'children'),
-      Output('client_login_to_account', 'children'),
+      Output('is_client', 'data-valid'),
       [Input('login_button', 'n_clicks')], 
       [State('client_lname', 'value'),
       State('client_tin', 'value'),
@@ -154,10 +137,10 @@ def client_login(app):
 
       # Check to make sure all required fields are entered 
       # (see def validate_data above)
-      if n >= 1:
+      if n > 0:
          data_ok = validate_data(client_lname, client_tin, client_dob)
          if not data_ok:
-            return('Your Last Name, TIN and DOB are required', no_update)
+            return 'Your Last Name, TIN and DOB are required'
 
          # Data was entered into both the login and password fields. 
          # Check for record in Login table
@@ -177,61 +160,16 @@ def client_login(app):
                (client_lname, client_tin, client_dob))
 
          data_set = c.fetchall()
-         # if data_set is Null there is no record for this person
-         if data_set is None:
-            return("I'm sorry, there is no record for this person", no_update)
 
-         # check to see of the customer has set up an account yet
-         c.execute( \
-            'SELECT \
-               *\
-            FROM \
-               account_master \
-            Inner Join customer_master On customer_master.cust_id = account_master.master_account_id')
+         # if nothing was returned there is no record for this person and they are not a client
+         if not data_set:
+            return "I'm sorry, there is no record for this person"
+         # Return True and look for transactional data from client in
+         # present_customer_data (above)
+         return True
 
-         account_info = c.fetchall()
-         if account_info is None:
-            return("I'm sorry, there is no account set up for this customer yet", no_update)
-
-         # Check to see if money has been deposited into the journal entry table
-         c.execute( \
-            'SELECT \
-               * \
-            FROM \
-               journal_entries \
-            Inner Join customer_master On customer_master.cust_id = journal_entries.cust_id')
-         journal_entries = c.fetchall()
-         if journal_entries is None:
-            return("I'm sorry, no money has been deposited with us yet", no_update)
-
-
-         # Get data to display
-         c.execute( \
-            'SELECT \
-               customer_master.First_name, \
-               customer_master.Middle_initial, \
-               customer_master.Last_name, \
-               account_master.account_number, \
-               account_master.account_balance, \
-               journal_entries.Debit_amount, \
-               journal_entries.Credit_amount, \
-               journal_entries.Description \
-            FROM \
-               customer_master \
-            Inner join account_master On \
-               account_master.master_account_id = customer_master.Cust_Id \
-            Inner join journal_entries On \
-               journal_entries.master_account_id = account_master.master_account_id \
-            Where \
-               customer_master.Last_name = ? and customer_master.TIN = ? and \
-               customer_master.DOB = ?', \
-               (client_lname, client_tin, client_dob))
-         customer_information = c.fetchall()
-         # returned value is tuple in a list. This removes the tuple.
-         customer_information = [item for sublist in customer_information for item in sublist]
-
-         print('customer information = ', customer_information)
-         return 'Customer information is: {}'.format(customer_information)
+      # this return is just here so that Dash does not produce an error. 
+      return no_update
 
 
 def open_account(app):
@@ -269,8 +207,8 @@ def open_account(app):
             return[f'The following fields are required: first name, last name, address, city, state, zipcode, email, tax id number, date of birth and password']
 
 
-      # Passed data validation. Open database and enter information into account master,
-      # reference_id and login tables
+         # Passed data validation. Open database and enter information into account master,
+         # reference_id and login tables
          engine = create_engine('sqlite:///roboinvest.db')
          Base = declarative_base()
          conn = sqlite3.connect(reference.database)
@@ -322,7 +260,9 @@ def open_account(app):
             conn.commit()
 
             # Add new record to account master file.
+            # For the moment, account number will be 1 for each account - this is for the MVP
             account_number = 1
+            # Account balance is 0 when you open an account.
             account_balance = 0
 
             datalist = [ref_id, account_number, account_balance, ref_id, time_stamp]
@@ -460,12 +400,12 @@ def sample_portfolio(app, df_portfolio):
                      share_count[count], 
                      sec_val_list[count][1], 
                      share_count[count] * sec_val_list[count][1]]]
-
       # add cash on at the end of the portfolio list. It appers at the bottom of the datatable.
       portfolio += [['Cash', 'N/A', 'N/A', 'N/A', cash]]
 
       sample_portfolio = pd.DataFrame(portfolio, 
          columns = ['security', 'category', 'shares', 'share price', 'total cost'])
+      print('sample portfolio ', sample_portfolio.to_dict('records'))
       return sample_portfolio.to_dict('records')
 
 
@@ -510,3 +450,133 @@ def contact_layout(app):
             return[f'Sorry, there was a problem sending your email']
       else:
          return ['']
+
+
+def journal_data_entry(app):
+   @app.callback(
+      Output('journal_entry_complete', 'children'),
+      [Input('journal_submit_button', 'n_clicks')], 
+      [State('date_of_entry', 'value'),
+      State('master_account_number', 'value'),
+      State('acct_number', 'value'),
+      State('debit_amt', 'value'),
+      State('credit_amt', 'value'),
+      State('description', 'value'),
+      State('ee_lname', 'value'),
+      State('ee_tin', 'value'),
+      State('ee_dob', 'value')]
+   )
+   def journal_entry(n, master_account_number, date_of_entry, acct_number, debit_amt, credit_amt, 
+      description, ee_lname, ee_tin, ee_dob):
+      def validate_data(master_account_number, date_of_entry, acct_number,
+         description, ee_lname, ee_tin, ee_dob):
+         # test to see if any data is blank
+         if master_account_number is None or date_of_entry is None or acct_number is None \
+            or description is None or ee_lname is None or ee_tin is None or ee_dob is None:
+            return False
+         else:
+            return True 
+
+      # Check to make sure all required fields are entered 
+      # (see def validate_data above)
+      if n >= 1:
+         data_ok = validate_data(master_account_number, date_of_entry, acct_number,
+         description, ee_lname, ee_tin, ee_dob)
+         if not data_ok:
+            return[f'Some of the critical information is blank. Please make sure that all fields are filled in']
+
+         # Data check for debit and credit...they cannot both be 0 or both be nonzero.
+         if debit_amt is None and credit_amt is None:
+             return[f'Credit or debit amount must be greater than 0.']
+         if debit_amt is not None and credit_amt is not None:
+            return[f'Both the credit or debit amount cannot be greater than 0.']
+         # Data was entered into both the login and password fields. 
+         # Check for record in Login table
+         engine = create_engine('sqlite:///roboinvest.db')
+         Base = declarative_base()
+         conn = sqlite3.connect(reference.database)
+         c = conn.cursor()
+    
+         # Check to see if a record for this employee. Only an employee can enter data for a client
+         c.execute(
+            'SELECT \
+               * \
+            FROM \
+               Employee_Master \
+            Where \
+               Last_name = ? and TIN = ? and DOB = ?', \
+               (ee_lname, ee_tin, ee_dob))
+
+         data_set = c.fetchall()
+         # data_set is Null. We didn't find anything. Issue errror message
+         if not data_set:
+            return 'There is no record for this employee information. Please try again.'
+         user_id = data_set[0][0]
+
+         # Get cust_id from customer_master table.
+         c.execute(\
+            'SELECT \
+               cust_id \
+            FROM \
+               customer_master \
+            Where \
+               \
+               cust_id = ?', \
+               (master_account_number))
+
+         cust_id = c.fetchall()
+         if not cust_id:
+            return 'There is no record for this customer master id'
+         cust_id = cust_id[0][0]
+
+         # We've passed the tests. Write the data to the journal
+         time_stamp = datetime.now()
+         datalist = [date_of_entry, master_account_number, cust_id, acct_number, 
+            debit_amt, credit_amt, description, user_id, ' ', time_stamp]
+         c.execute('INSERT INTO `journal_entries` VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', datalist)
+         conn.commit()
+         # Update account balance in account_master file...
+         if credit_amt > 0:
+            datalist = [credit_amt, master_account_number, acct_number]
+            c.execute('UPDATE `account_master` set account_balance = account_balance + ? \
+            WHERE account_master.master_account_id = ? and \
+               account_master.account_number = ?', datalist)
+         else:
+            datalist = [debit_amt, master_account_number, acct_number]
+            c.execute('UPDATE `account_master` set account_balance = account_balance - ? \
+            WHERE account_master.master_account_id = ? and \
+               account_master.account_number = ?', datalist)
+         conn.commit()
+
+         # Get email data from customer and email them to say that we have their money
+         c.execute(\
+            'SELECT \
+               email_addr \
+            FROM \
+               Customer_Master \
+            Inner Join journal_entries On journal_entries.ee_id = Customer_Master.cust_id')
+         email = c.fetchall()
+         email_addr = email[0][0]
+
+         transaction_amt = credit_amt if credit_amt > 0 else debit_amt
+         message = MIMEMultipart('alternative')
+         message['Subject'] = 'Email message from the Shore-Koppelman Group'
+         message_body = 'A transaction of '+str(transaction_amt)+' has been made in your account.'
+         message.attach(MIMEText(message_body, 'plain'))
+
+         try:
+            server = smtplib.SMTP('smtp.gmail.com', 587)
+            server.starttls()
+            server.login(reference.account, reference.password)
+            from_addr = 'Roboinvest.com'
+
+            # Sent from, sent to, message
+            server.sendmail(from_addr, email_addr, message.as_string())
+            server.quit()
+            return 'Journal entry completed. An email has been sent to the clients account alerting them that this transaction is complete.'
+         except Exception as e:
+            print(f'email did not send ', e)
+            return['']
+      # else:
+      #    return 'Journal entry completed'
+
