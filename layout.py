@@ -113,6 +113,8 @@ def client_login():
             maxLength = 25,
             debounce = True,
         ),
+        dcc.Input(id = 'acct_num',
+            type = 'hidden'),
         html.Br(),
         html.Br(),
         html.Div([
@@ -122,7 +124,7 @@ def client_login():
             n_clicks = 0,
             className='mr-1'
             )],
-        ), # html.Div(id = 'client_login_to_account'),
+        ), 
         html.Div(id = 'is_client'),
         ], style = TEXT_ALIGN_CENTER,
     ),
@@ -130,8 +132,7 @@ def client_login():
 )
 
 
-def present_customer_data_layout(First_name, Middle_initial, Last_name,
-                                account_number, account_balance,
+def present_customer_data_layout(Name, account_number, account_balance,
                                 last_transaction):
     return html.Div([
     html.Br(),
@@ -139,77 +140,37 @@ def present_customer_data_layout(First_name, Middle_initial, Last_name,
     html.H5('Client Information',
         style = TEXT_ALIGN_CENTER ),
     html.Br(),
-    html.Form([
-        html.Label('First Name: {0}'.format(First_name), 
-            ), 
-        html.Label('Middle Initial: {0}'.format(Middle_initial),
-            ), 
-        html.Label('Last Name: {0}'.format(Last_name), 
-            ), 
-        html.Br(),
+    html.Pre([
+        html.Label('Name: {0}'.format(Name), 
+            ),
         html.Br(),
         html.Label('Account Number: {0}'.format(account_number), 
             ), 
-        html.Label('Account Balance: {0}'.format(account_balance), 
+        html.Br(),
+        html.Label('Account Balance: ${:,.2f}'.format(account_balance), 
             ), 
         html.Br(),
-        html.Br(),
-        html.Label('Last Transaction: {0}'.format(last_transaction), 
+        html.Label('Last Transaction: ${:,.2f}'.format(last_transaction), 
             ),
     ]), html.Div(id = 'is_client'),
-        # html.Div(id = 'client_data')
-],  # style = {'display': 'inline-block',
-    #         'margin': '50px'},
+    # html.Div(id = 'client_detail'),
+])
+
+
+def client_detail_data_layout(journal_entries):
+    return html.Div([
+        html.Pre([
+            html.Label('Date_of_entry: {0}'.format(Date_of_entry),
+                ),
+            html.Label('Debit_amount : ${:,.2f}'.format(Debit_amount),
+                ),
+            html.Label('Credit_amount: ${:,.2f}'.format(Credit_amount),
+                ),
+            html.Label('Description: {0}'.format(Description),
+                ),
+        ]), html.Div(id = 'is_client'),
+    ], 
 )
-
-
-# def present_customer_data_layout(app, df_cust_info):
-#     return html.Div([
-#         html.Label('Customer Transaction Information'),
-#         dash_table.DataTable(
-#         id='df_cust_info',
-#         columns = [
-#             {'name': 'First Name', 
-#                 'id' : 'first_name'},
-#             {'name': 'Middle Initial',
-#                 'id': 'middle_initial'},
-#             {'name': 'Last Name', 
-#                 'id' : 'last_name'},
-#             {'name': 'Account Number', 
-#                 'id' : 'account_number',
-#                 # 'type' : 'numeric'
-#             },
-#             {'name': 'Account Balance', 
-#                 'id' : 'account_balance',
-#                 # 'type' : 'numeric',
-#                 # 'format': FormatTemplate.money(2)
-#              },
-#             {'name': 'Last Transaction', 
-#                 'id' : 'last_transaction',
-#                 # 'type' : 'numeric',
-#                 # 'format': FormatTemplate.money(2)
-#             },
-#         ],
-#         style_header = {
-#             'backgroundColor': 'rgb(230,230,230)', 
-#             'font-weight' : 'bold',
-#         },
-#         style_cell = {
-#             'textAlign' : 'center'
-#         },
-#         style_data_conditional=
-#         [
-#             {'if': {'row_index': 'odd'}, 'backgroundColor': 'rgb(248, 248, 248)'},
-#         ],  
-#         style_table = {
-#             'maxHeight': '300px', 
-#             'overflowY' : 'scroll',
-#             'font-family': 'sans-serif',
-#             'font-size': '24',
-#         } 
-#     ),  # html.Div(id = 'is_client')
-#         html.Div(id = 'client_layout')
-# ])
 
 
 def open_account(app):
@@ -616,7 +577,7 @@ def journal_data_entry(app):
                 html.Br(),
                 html.Br(),
                 html.Br(),
-                html.H5('Credit/Debit Information',
+                html.H5('Credit/Debit Information (Please enter debits as negative amounts)',
                    style = {'font-weight ': 'bold'}
                    ),
                 html.Label('Debit (withdrawal):',

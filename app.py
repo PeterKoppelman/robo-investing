@@ -93,10 +93,9 @@ def render_page_content(pathname):
     elif pathname == '/page-7':
         return layout.journal_data_entry(app)
 
-# column_names = []
-# df_cust_info = pd.DataFrame(columns = column_names)
-# callbacks.present_customer_data(app, df_cust_info)
+
 callbacks.present_customer_data(app)
+callbacks.present_customer_detail(app)
 
 callbacks.client_login(app)
 callbacks.journal_data_entry(app)

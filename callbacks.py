@@ -34,18 +34,49 @@ import sys
 # sys.path.insert(1, '/roboinvest/apps')
 
 
-# def present_customer_data(app, df_cust_info):
+
+def present_customer_detail(app):
+   @app.callback(
+      Output('client_detail', 'children'),
+      [Input('is_client', 'children'),
+      Input('acct_num', 'value')]
+   )
+   def get_journal_detail(is_client, acct_num):
+      print('in get journal detail')
+      print('acct num = ', acct_num)
+      # if input is_client is not true, exit. There is no client data to get.
+      if is_client is not True:
+         return
+
+      c.execute( \
+         'SELECT \
+            Date_of_entry, \
+            Debit_amount, \
+            Credit_amount, \
+            Description, \
+         FROM \
+            journal_entries \
+         Where \
+            master_acount_id = ?', \
+            (acct_num))
+      journal_entries = c.fetchall()
+      print('journal entries = ',journal_entries)
+      return journal_entries
+
+
 def present_customer_data(app):
    @app.callback(
       Output('is_client', 'children'),
       [Input('is_client', 'data-valid')],
       [State('client_lname', 'value'),
       State('client_tin', 'value'),
-      State('client_dob', 'value')]
+      State('client_dob', 'value'),
+      State('acct_num', 'value')]
    )
-   def get_client_data(is_client, client_lname, client_tin, client_dob):
+   # def get_client_data(is_client, client_lname, client_tin, client_dob):
+   def get_client_data(is_client, client_lname, client_tin, client_dob, acct_num):
       # if is_client is True we have a client match. 
-      # Else it is false and print applicable error message
+      # Else it is false and print applicable error message from client_login function
       if is_client is not True:
          return is_client
 
@@ -81,13 +112,15 @@ def present_customer_data(app):
       # Get data to display
       c.execute( \
          'SELECT DISTINCT\
-            customer_master.First_name, \
-            customer_master.Middle_initial, \
-            customer_master.Last_name, \
+            CASE \
+               when customer_master.Middle_initial is Null \
+               then customer_master.First_name || " " || customer_master.Last_name  \
+               else customer_master.First_name || " " || customer_master.Middle_initial || " " || customer_master.Last_name \
+            END name, \
             account_master.account_number, \
             account_master.account_balance, \
             CASE \
-               when journal_entries.Debit_amount > 0 \
+               when journal_entries.Debit_amount != 0 \
                then journal_entries.Debit_amount \
                else journal_entries.Credit_amount \
             END last_transaction \
@@ -105,18 +138,10 @@ def present_customer_data(app):
       customer_information = []
       customer_information = c.fetchall()
       # returned value is tuple in a list. This removes the tuple.
-      # customer_information = [[item for sublist in customer_information for item in sublist]]
       customer_information = [item for sublist in customer_information for item in sublist]
-      print(customer_information)
-      return layout.present_customer_data_layout(customer_information[0], customer_information[1],
-                     customer_information[2], customer_information[3], 
-                     customer_information[4], customer_information[5])
-      # df_cust_info = pd.DataFrame(customer_information, columns =['first_name', 'middle_initial',
-      #                'last_name', 'account_number', 'account_balance', 'last_transaction'])
-      # print('df_cust_info ', df_cust_info.to_dict('records)'))
-      # print()
-      # return df_cust_info.to_dict('records')
 
+      return layout.present_customer_data_layout(customer_information[0], customer_information[1], 
+                     customer_information[2], customer_information[3])
 
 
 def client_login(app):
@@ -125,9 +150,10 @@ def client_login(app):
       [Input('login_button', 'n_clicks')], 
       [State('client_lname', 'value'),
       State('client_tin', 'value'),
-      State('client_dob', 'value')]
+      State('client_dob', 'value'),
+      State('acct_num', 'value')]
    )
-   def cl_login(n, client_lname, client_tin, client_dob):
+   def cl_login(n, client_lname, client_tin, client_dob, acct_num):
       def validate_data(client_lname, client_tin, client_dob):
          # test to see if either login or password is blank
          if client_lname is None or client_tin is None or client_dob is None:
@@ -140,6 +166,7 @@ def client_login(app):
       if n > 0:
          data_ok = validate_data(client_lname, client_tin, client_dob)
          if not data_ok:
+            # return 'Your Last Name, TIN and DOB are required'
             return 'Your Last Name, TIN and DOB are required'
 
          # Data was entered into both the login and password fields. 
@@ -309,12 +336,13 @@ def sample_portfolio(app, df_portfolio):
 
       conn = None
       try:
-         conn = sqlite3.connect('/users/pkopp/python_diploma/capstone/dev/database/roboinvest.db')
+         conn = sqlite3.connect('/roboinvest/database/roboinvest.db')
          c = conn.cursor()
       except Error as e:
          print('There are problems opening up the roboinvest database ', e)
          return
 
+      # Get security information, category and price history
       c.execute(
          'SELECT \
             price_history.Sec,\
@@ -377,6 +405,7 @@ def sample_portfolio(app, df_portfolio):
       in adj_portfolio will get adjusted in an equal percentage based on the
       delta between the adj_portfolio value and the amount of items in the portfolio.
       '''
+
       if sum(adj_portfolio) != 100:
          adjuster = (sum(adj_portfolio) - 100)/(len(adj_portfolio) - 1)
          for n in range(len(adj_portfolio) - 1):
@@ -385,12 +414,13 @@ def sample_portfolio(app, df_portfolio):
 
       '''Calculate the number of shares of each security that will be purchased.
       Only full shares can be purchased, not partial ones. For this reason, cash is 
-      the amount of money left over after the purchase''' 
+      the amount of money left over after the purchase.
+      ''' 
       share_count = []
       cash = account_bal
       for count in range(len(adj_portfolio)):
          share_count.append(int((account_bal * adj_portfolio[count]/100) / sec_val_list[count][1]))
-         cash -= int(share_count[count] * sec_val_list[count][1])
+         cash -= share_count[count] * sec_val_list[count][1]
 
       # put the portfolio together - this is a list in a list
       portfolio = []
@@ -403,9 +433,9 @@ def sample_portfolio(app, df_portfolio):
       # add cash on at the end of the portfolio list. It appers at the bottom of the datatable.
       portfolio += [['Cash', 'N/A', 'N/A', 'N/A', cash]]
 
+      # Create pandas dataframe of sample portfolio and push out to layout screen. 
       sample_portfolio = pd.DataFrame(portfolio, 
          columns = ['security', 'category', 'shares', 'share price', 'total cost'])
-      print('sample portfolio ', sample_portfolio.to_dict('records'))
       return sample_portfolio.to_dict('records')
 
 
