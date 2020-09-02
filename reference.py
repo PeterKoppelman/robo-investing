@@ -12,7 +12,8 @@ password = 'NYUCapstone'
 account = 'capstone.roboinvesting@gmail.com'
 
 # Recipients of emails
-recipients = ['pbkoppelman@gmail.com', 'michael.shore93@gmail.com']
+# recipients = ['pbkoppelman@gmail.com', 'michael.shore93@gmail.com']
+recipients = ['pbkoppelman@gmail.com']
 
 # base portfolio -this is a list of lists.
 base_portfolio = [[55.,30.0,5.0,5.0,5.0], [50.0,30.0,10.0,5.0,5.0], [45.0,30.0,10.0,10.0,5.0], 
@@ -44,9 +45,7 @@ appid = data['appid']
 token = data['token']
 
 # setting paths and naming database table paths.
-db_path = '/roboinvest/apps'
-
-database = r"C:\roboinvest\database\roboinvest.db"
-
-id = 1
-
+db_path = '/users/pkopp/python_diploma/Capstone/dev/apps'
+database = r"C:\users\pkopp\python_diploma\Capstone\dev\database\roboinvest.db"
+# db_path = '/roboinvest/apps'
+# database = r"C:\roboinvest\database\roboinvest.db"

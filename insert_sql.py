@@ -22,17 +22,19 @@ c = conn.cursor()
 time_stamp = datetime.now()
 
 # Account Master
-datalist = ['1', '1', '0', '1', time_stamp ]
-c.execute('INSERT INTO `account_master` VALUES(?, ?, ?, ?, ?)', datalist)
+# datalist = ['1', '1', '0', '1', time_stamp ]
+# c.execute('INSERT INTO `account_master` VALUES(?, ?, ?, ?, ?)', datalist)
 
 # Customer Master
-datalist = ['1', 'John', ' ', 'Smith', '123 Main Street', 'New York', 'New York', '10001', 
-	'pbkoppelman@gmail.com', '123456789', '01/01/2000', time_stamp]
-c.execute('INSERT INTO `customer_master` VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', datalist)
+# datalist = ['1', 'John', ' ', 'Smith', '123 Main Street', 'New York', 'New York', '10001', 
+# 	'pbkoppelman@gmail.com', '123456789', '01/01/2000', time_stamp]
+# c.execute('INSERT INTO `customer_master` VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', datalist)
 
 # Employee Master
-datalist = ['1', 'Peter', ' ', 'Koppelman', '320 Central Park West Apt 9G', 'New York', 'New York',
+datalist = ['Peter', ' ', 'Koppelman', '320 CPW', 'New York', 'New York',
 	 '10025', 'pkoppelman@yahoo.com', '123123123', '01/04/1958', time_stamp]
-c.execute('INSERT INTO `employee_master` VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', datalist)
+c.execute('INSERT INTO employee_master (First_name, Middle_initial, Last_name, Street_addr, \
+	City, State, Zip_code, Email_addr, TIN, DOB, Time_stamp) \
+	VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', datalist)
 
 conn.commit()

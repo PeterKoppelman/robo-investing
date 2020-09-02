@@ -6,7 +6,9 @@ import dash_html_components as html
 import dash_table
 from dash_table.Format import Format, Scheme, Sign, Symbol
 import dash_table.FormatTemplate as FormatTemplate
+from dash.dependencies import Input, Output, State
 
+from datetime import date
 import pandas as pd
 
 # The following are Dash's version of CSS
@@ -53,6 +55,43 @@ TEXT_ALIGN_CENTER = {
 CLIENT_PADDING = {
     'padding': '5px 1em 0 2em'   
 }
+
+LOGIN_STYLE = {
+    'width': '340px',
+    'margin': '50px auto',
+    'font-size': '15px',
+    'margin-bottom': '15px',
+    'background': '#f7f7f7',
+    'box-shadow': '0px 2px 2px rgba(0, 0, 0, 0.3)',
+    'padding': '30px'
+}
+
+SIDEBAR_STYLE = {
+    "position": "fixed",
+    "top": 0,
+    "left": 0,
+    "bottom": 0,
+    "width": "18rem",
+    "padding": "2rem 1rem",
+    "background-color": "#f8f9fa",
+}
+
+# the styles for the main content position it to the right of the sidebar and
+# add some padding.
+CONTENT_STYLE = {
+    "margin-left": "18rem",
+    "margin-right": "2rem",
+    "padding": "2rem 1rem",
+}
+
+header = html.Div([
+        html.Div([
+        html.H2('The Shore-Koppelman Group'),
+        html.H3('Robo-Investing Tool'),
+        ], style = HEADER_STYLE
+    ),
+])
+
 def welcome():
     return html.Div([
         html.Div([
@@ -67,74 +106,66 @@ def welcome():
 ])
 
 
-def client_login():
+def login():
     return html.Div([
         html.Div([
-        html.H2('The Shore-Koppelman Group'),
-        html.H3('Robo-Investing Tool'),
-        ], style = HEADER_STYLE
-        ),
-
-        html.Br(),
-        html.Br(),
-        html.Form([
-        html.H5('Client Login',
+            html.Div([
+            html.H2('The Shore-Koppelman Group'),
+            html.H3('Robo-Investing Tool'),
+            ], style = HEADER_STYLE
             ),
-        html.Br(),
-        html.Label('Last Name: ', 
-            ), 
-        dcc.Input(type = 'text',
-            id = 'client_lname', 
-            placeholder = 'Last Name',
-            minLength = 8, 
-            maxLength = 40,
-            debounce = True,
-        ),
-
-        html.Br(),
-        html.Br(),
-        html.Label('TIN: ', 
+        ]),
+        html.Div(children = [
+            html.Div( children = [
+                html.Label('Email Address',
+                    ),
+                dcc.Input(type = 'email',
+                    id = 'email', 
+                    placeholder = 'email@example.com',
+                    minLength = 7, 
+                    maxLength = 40,
+                    debounce = True,
+                    className = 'form-control',
+                ),  
+                ], className = 'form-group'
             ),
-        dcc.Input(type = 'password',
-            id = 'client_tin', 
-            placeholder = 'Your Tax ID Number',
-            minLength = 8, 
-            maxLength = 25,
-            debounce = True,
-        ),
-        html.Br(),
-        html.Br(),
-        html.Label('Date of Birth: ', 
+            html.Div( children = [
+                html.Label('Password:',
+                    ),
+                dcc.Input(type = 'password',
+                    id = 'password', 
+                    placeholder = 'Password',
+                    minLength = 8, 
+                    maxLength = 25,
+                    debounce = True,
+                    className = 'form-control'
+                ),
+            ], className = 'form-group'
             ),
-        dcc.Input(type = 'password',
-            id = 'client_dob', 
-            placeholder = 'Date of Birth',
-            minLength = 8, 
-            maxLength = 25,
-            debounce = True,
-        ),
-        dcc.Input(id = 'acct_num',
-            type = 'hidden'),
-        html.Br(),
-        html.Br(),
-        html.Div([
-        dbc.Button('Login',
-            id = 'login_button',
-            color = 'primary',
-            n_clicks = 0,
-            className='mr-1'
-            )],
-        ), 
+            html.Div(id = 'rec_type', style = {'display': 'none'}),
+            dbc.Button('Submit',
+                id = 'login_submit',
+                color = 'primary',
+                className = 'mr-1',
+                n_clicks = 0),
         html.Div(id = 'is_client'),
-        ], style = TEXT_ALIGN_CENTER,
-    ),
-], 
+        ], 
+        style = LOGIN_STYLE,
+        ),
+    ],
 )
+
 
 
 def present_customer_data_layout(Name, account_number, account_balance,
                                 last_transaction):
     return html.Div([
+            html.Div([
+            html.H2('The Shore-Koppelman Group'),
+            html.H3('Robo-Investing Tool'),
+            ], style = HEADER_STYLE
+        ),
+    ]),html.Div([
     html.Br(),
     html.Br(),
     html.H5('Client Information',
@@ -173,18 +204,114 @@ def client_detail_data_layout(journal_entries):
 )
 
 
+def sample_portfolio_layout(app, df_portfolio):
+    return html.Div([
+                html.Div([
+                html.H2('The Shore-Koppelman Group'),
+                html.H3('Robo-Investing Tool'),
+            ], style = HEADER_STYLE
+        ),
+    ]),html.Div([
+    html.Br(),
+    html.H5(children = ['Please enter your age (minimum 18 and maximum 99): ',
+        dcc.Input(style = {'width': 80}, 
+                    id = 'my-age', 
+                    value = 25,
+                    type = 'number', 
+                    min = 18, 
+                    max = 99,
+                    debounce = True
+                    ),
+
+            html.H6(id = 'id-age')
+        ], style = PORTFOLIO_LAYOUT
+    ),
+
+    html.Br(),
+    html.H5(children = ['Enter the amount of money would you like to invest $): ',
+        dcc.Input(style = {'width': 125}, 
+                    id = 'my-amount', 
+                    value = 5000,
+                    type = 'number', 
+                    min = 5000, 
+                    max = 100000,
+                    debounce=True
+                    ),
+            html.H6(id = 'id-amount')
+        ], style = PORTFOLIO_LAYOUT
+    ),
+
+    html.Br(),
+    html.Div(children = ['What is your risk tolerance (1 is the lowest, 10 is the highest and 5 is neutral)',
+        dcc.Slider(
+            id = 'risk-tolerance-slider',
+            min = 1,
+            max = 10,
+            step = 1,
+            value = 5,
+            marks = {i: '{}'.format(i) for i in range(11)},
+        ), html.Div(id = 'risk-tolerance-output-slider'),
+    ], style = SLIDER_LAYOUT
+    ),
+
+    html.Br(),
+    html.Br(),
+    html.H5(children = ['The dollar allocation to each sector will change every day that the financial markets are open at approximately 6:45 pm.'],
+            style = TEXT_ALIGN_CENTER ),
+    html.H5(children = ['This is the time that we get new market data'],
+            style = TEXT_ALIGN_CENTER ),
+    html.Br(),
+    dash_table.DataTable(
+        id='df_portfolio',
+        columns = [
+            {'name': 'Security', 
+                'id' : 'security'},
+            {'name': 'Category',
+                'id': 'category'},
+            {'name': 'Shares', 
+                'id' : 'shares'},
+            {'name': 'Share Price', 
+                'id' : 'share price',
+                'type' : 'numeric',
+                'format': FormatTemplate.money(2)
+            },
+            {'name': 'Total Cost', 
+                'id' : 'total cost',
+                'type' : 'numeric',
+                'format': FormatTemplate.money(2)
+             },
+        ],
+        style_header = {
+            'backgroundColor': 'rgb(230,230,230)', 
+            'font-weight' : 'bold',
+        },
+        style_cell = {
+            'textAlign' : 'center'
+        },
+        style_data_conditional=
+        [
+            {'if': {'row_index': 'odd'}, 'backgroundColor': 'rgb(248, 248, 248)'},
+        ],  
+        style_table = {
+            'maxHeight': '300px', 
+            'overflowY' : 'scroll',
+            'font-family': 'sans-serif',
+            'font-size': '24',
+        } 
+    ), 
+    html.Div(id = 'portfolio_layout')
+])
+
+
+
 def open_account(app):
     return html.Div([
-        html.Div([
-        html.H2('The Shore-Koppelman Group'),
-        html.H3('Robo-Investing Tool'),
-        ],
-        style = HEADER_STYLE 
-    ),
-    html.Br(),
-    html.Br(),
-    html.H5('To open an account please fill out the following information',
-        style = TEXT_ALIGN_CENTER ),
+                html.Div([
+                html.H2('The Shore-Koppelman Group'),
+                html.H3('Robo-Investing Tool'),
+            ], style = HEADER_STYLE
+        ),
+    ]),html.Div([
     html.Br(),
     html.Br(),
     html.Form([
@@ -320,119 +447,14 @@ def open_account(app):
 )
 
 
-def sample_portfolio_layout(app, df_portfolio):
-    return html.Div([
-        html.Div([
-        html.H2('The Shore-Koppelman Group'),
-        html.H3('Robo-Investing Tool'),
-        ], style = HEADER_STYLE 
-    ),
-    html.Br(),
-    html.Br(),
-    html.H5("Create a Sample Portfolio - it's free",
-        style = TEXT_ALIGN_CENTER ),
-    html.Br(),
-    html.H5(children = ['Please enter your age (minimum 18 and maximum 99): ',
-        dcc.Input(style = {'width': 80}, 
-                    id = 'my-age', 
-                    value = 25,
-                    type = 'number', 
-                    min = 18, 
-                    max = 99,
-                    debounce = True
-                    ),
-
-            html.H6(id = 'id-age')
-        ], style = PORTFOLIO_LAYOUT
-    ),
-
-    html.Br(),
-    html.H5(children = ['Enter the amount of money would you like to invest $): ',
-        dcc.Input(style = {'width': 125}, 
-                    id = 'my-amount', 
-                    value = 5000,
-                    type = 'number', 
-                    min = 5000, 
-                    max = 100000,
-                    debounce=True
-                    ),
-            html.H6(id = 'id-amount')
-        ], style = PORTFOLIO_LAYOUT
-    ),
-
-    html.Br(),
-    html.Div(children = ['What is your risk tolerance (1 is the lowest, 10 is the highest and 5 is neutral)',
-        dcc.Slider(
-            id = 'risk-tolerance-slider',
-            min = 1,
-            max = 10,
-            step = 1,
-            value = 5,
-            marks = {i: '{}'.format(i) for i in range(11)},
-        ), html.Div(id = 'risk-tolerance-output-slider'),
-    ], style = SLIDER_LAYOUT
-    ),
-
-    html.Br(),
-    html.Br(),
-    html.H5(children = ['The dollar allocation to each sector will change every day that the financial markets are open at approximately 6:45 pm.'],
-            style = TEXT_ALIGN_CENTER ),
-    html.H5(children = ['This is the time that we get new market data'],
-            style = TEXT_ALIGN_CENTER ),
-    html.Br(),
-    dash_table.DataTable(
-        id='df_portfolio',
-        columns = [
-            {'name': 'Security', 
-                'id' : 'security'},
-            {'name': 'Category',
-                'id': 'category'},
-            {'name': 'Shares', 
-                'id' : 'shares'},
-            {'name': 'Share Price', 
-                'id' : 'share price',
-                'type' : 'numeric',
-                'format': FormatTemplate.money(2)
-            },
-            {'name': 'Total Cost', 
-                'id' : 'total cost',
-                'type' : 'numeric',
-                'format': FormatTemplate.money(2)
-             },
-        ],
-        style_header = {
-            'backgroundColor': 'rgb(230,230,230)', 
-            'font-weight' : 'bold',
-        },
-        style_cell = {
-            'textAlign' : 'center'
-        },
-        style_data_conditional=
-        [
-            {'if': {'row_index': 'odd'}, 'backgroundColor': 'rgb(248, 248, 248)'},
-        ],  
-        style_table = {
-            'maxHeight': '300px', 
-            'overflowY' : 'scroll',
-            'font-family': 'sans-serif',
-            'font-size': '24',
-        } 
-    ), 
-    html.Div(id = 'portfolio_layout')
-])
-
 def contact_layout(app):
-    return html.Div([ 
-        html.Div([
-        html.H2('The Shore-Koppelman Group'),
-        html.H3('Robo-Investing Tool'),
-        ], style = HEADER_STYLE 
-    ),
-    html.Br(),
-    html.Br(),
-    html.H5('To send us a comment please fill out the information below:',
-        style = TEXT_ALIGN_CENTER ),
-
+    return html.Div([
+            html.Div([
+            html.H2('The Shore-Koppelman Group'),
+            html.H3('Robo-Investing Tool'),
+        ], style = HEADER_STYLE
+        ),
+    ]),html.Div([ 
     html.Br(),
     dbc.Label('Name:'),
     dbc.Input(
@@ -480,15 +502,12 @@ def contact_layout(app):
 
 def faq():
     return html.Div([
-        html.Div([
-        html.H2('The Shore-Koppelman Group'),
-        html.H3('Robo-Investing Tool'),
-        ], style = HEADER_STYLE 
-    ),
-    html.Br(),
-    html.Br(),
-    html.H4('FAQ Page',
-        style = TEXT_ALIGN_CENTER ),
+            html.Div([
+            html.H2('The Shore-Koppelman Group'),
+            html.H3('Robo-Investing Tool'),
+        ], style = HEADER_STYLE
+        ),
+    ]),html.Div([
     html.Br(),
     html.Br(),
     html.Div([
@@ -529,82 +548,83 @@ def faq():
 
 ])
 
-def journal_data_entry(app):
+def journal_data_entry(app, cust_info, ee_info):
     return html.Div([
-        html.Div([
-        html.H2('The Shore-Koppelman Group'),
-        html.H3('Robo-Investing Tool'),
-            ], style = HEADER_STYLE
-        ),
-        html.Br(),
-        html.Br(),
-        html.Br(),
-        html.H5('Enter deposit information from the Customer',
-               style = TEXT_ALIGN_CENTER ),
+                html.Div([
+                html.H2('The Shore-Koppelman Group'),
+                html.H3('Robo-Investing Tool'),
+                ], style = HEADER_STYLE
+            ),
+        ]),html.Div([
         html.Br(),
         html.Form([
             html.Br(),
-            html.H5('Account Information',
+            html.H5('General Information',
                    style = {'font-weight ': 'bold'}
                    ),
                 html.Label('Date:',
                     style = LABEL
                     ),
-                 dcc.Input(id = 'date_of_entry', 
-                            type = 'text', 
-                            minLength = 8, 
-                            maxLength = 25,
-                            debounce = True,
-                            ),
-                html.Label('Master Account:',
+                    dcc.DatePickerSingle(
+                        id = 'date_of_entry', 
+                        date = date.today().strftime('%m/%d/%Y'),
+                        style = {'display': 'inline-block',
+                                'position': 'relative',
+                                'left': 2,
+                                'top': 4,  
+                                }
+                        ),
+                html.Label('Customer:',
                     style = LABEL
                     ),
-                dcc.Input(id = 'master_account_number', 
-                            type = 'text', 
-                            minLength = 8, 
-                            maxLength = 25,
+                dcc.Dropdown(
+                    id = 'customer', 
+                    options = cust_info,
+                        style = {'fontsize': 24, 
+                                'width': 225,
+                                'display': 'inline-block',
+                                'position': 'relative',
+                                'left': 2,
+                                'top': 5}
+                            ),
+                html.Br(),
+                html.Br(),
+                html.Br(),
+                html.H5('Transaction Information',
+                   style = {'font-weight ': 'bold'}
+                   ),
+                html.Label('Transaction type:',
+                    style = LABEL
+                    ),
+                dcc.Dropdown(
+                    id = 'transaction_type', 
+                    options = [
+                        {'label': 'Initial Deposit', 'value': 'Initial Deposit'},
+                        {'label': 'Deposit', 'value': 'Deposit'},
+                        {'label': 'Withdrawal', 'value': 'Withdrawal'}],
+                        style = {'fontsize': 24, 
+                                'width': 150,
+                                'display': 'inline-block',
+                                'position': 'relative',
+                                'left': 2,
+                                'top': 5}
+                            ),
+                html.Label('Transaction Amount:',
+                    style = LABEL
+                    ),
+                dcc.Input(id = 'transaction_amount', 
+                            type = 'number', 
+                            minLength = 1, 
+                            maxLength = 10,
                             debounce = True,
                             ),
                 html.Label('Account Number:',
                     style = LABEL
                     ),
-                 dcc.Input(id = 'acct_number', 
+                dcc.Input(id = 'acct_number', 
                             type = 'text', 
-                            minLength = 0, 
+                            minLength = 1, 
                             maxLength = 10,
-                            debounce = True,
-                            ),
-                html.Br(),
-                html.Br(),
-                html.Br(),
-                html.H5('Credit/Debit Information (Please enter debits as negative amounts)',
-                   style = {'font-weight ': 'bold'}
-                   ),
-                html.Label('Debit (withdrawal):',
-                    style = LABEL
-                    ),
-                 dcc.Input(id = 'debit_amt', 
-                            type = 'number', 
-                            minLength = 5, 
-                            maxLength = 25,
-                            debounce = True,
-                            ),
-                html.Label('Credit (deposit):',
-                    style = LABEL
-                    ),
-                 dcc.Input(id = 'credit_amt', 
-                            type = 'number', 
-                            minLength = 5, 
-                            maxLength = 25,
-                            debounce = True,
-                            ),
-                html.Label('Description:',
-                    style = LABEL
-                    ),
-                 dcc.Input(id = 'description', 
-                            type = 'text', 
-                            minLength = 5, 
-                            maxLength = 50,
                             debounce = True,
                             ),
                 html.Br(),
@@ -614,14 +634,18 @@ def journal_data_entry(app):
                      style = {'font-weight ': 'bold'}
                      ),
                 html.Label('Last Name: ',
-                    style = LABEL 
+                        style = LABEL 
                     ), 
-                dcc.Input(type = 'text',
-                        id = 'ee_lname', 
-                        minLength = 8, 
-                        maxLength = 40,
-                        debounce = True,
-                    ),
+                    dcc.Dropdown(
+                    id = 'ee_lname', 
+                    options = ee_info,
+                        style = {'fontsize': 24, 
+                                'width': 225,
+                                'display': 'inline-block',
+                                'position': 'relative',
+                                'left': 2,
+                                'top': 5}
+                            ),
                 html.Label('Employee Number: ', 
                     style = LABEL
                     ),

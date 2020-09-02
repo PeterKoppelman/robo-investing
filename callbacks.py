@@ -3,6 +3,7 @@
 from dash.dependencies import Input, Output, State
 from dash import no_update
 from dash.exceptions import PreventUpdate
+import dash
 
 
 import dash_bootstrap_components as dbc
@@ -19,7 +20,7 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 # import email_to
 
-from apps import reference, layout
+from apps import reference, layout, test
 
 from datetime import datetime
 from sqlalchemy import Column, Date, String, create_engine, update
@@ -29,52 +30,70 @@ import sqlite3
 
 # import string library function  
 import string 
+import os
 
 import sys
 # sys.path.insert(1, '/roboinvest/apps')
+sys.path.insert(1, '/Users/pkopp/python_diploma/capstone/dev/apps')
 
+# def present_customer_detail(app):
+#    @app.callback(
+#       Output('client_detail', 'children'),
+#       [Input('is_client', 'children'),
+#       Input('acct_num', 'value')]
+#    )
+#    def get_journal_detail(is_client, acct_num):
+#       print('in get journal detail')
+#       print('acct num = ', acct_num)
+#       # if input is_client is not true, exit. There is no client data to get.
+#       if is_client is not True:
+#          return
 
+#       c.execute( \
+#          'SELECT \
+#             Date_of_entry, \
+#             Debit_amount, \
+#             Credit_amount, \
+#             Description, \
+#          FROM \
+#             journal_entries \
+#          Where \
+#             master_acount_id = ?', \
+#             (acct_num))
+#       journal_entries = c.fetchall()
+#       print('journal entries = ',journal_entries)
+#       return journal_entries
 
-def present_customer_detail(app):
-   @app.callback(
-      Output('client_detail', 'children'),
-      [Input('is_client', 'children'),
-      Input('acct_num', 'value')]
-   )
-   def get_journal_detail(is_client, acct_num):
-      print('in get journal detail')
-      print('acct num = ', acct_num)
-      # if input is_client is not true, exit. There is no client data to get.
-      if is_client is not True:
-         return
+# def initial_decision(app):
+#    @app.callback(
+#       Output('decision', 'children'),
+#       [Input('initial_decision', 'value')]
+#    )
 
-      c.execute( \
-         'SELECT \
-            Date_of_entry, \
-            Debit_amount, \
-            Credit_amount, \
-            Description, \
-         FROM \
-            journal_entries \
-         Where \
-            master_acount_id = ?', \
-            (acct_num))
-      journal_entries = c.fetchall()
-      print('journal entries = ',journal_entries)
-      return journal_entries
+#    def decision(initial_decision):
+#       # Stops error message when system starts up.
+#       if not initial_decision:
+#          return no_update
+
+#       print('initial decision = ', initial_decision)
+#       if '1' in initial_decision:
+#          return layout.login()
+#       else:
+#          print('in else stmt')
+#          # os.system('python test.py')
+#          return test.test1(app)
+
 
 
 def present_customer_data(app):
    @app.callback(
       Output('is_client', 'children'),
       [Input('is_client', 'data-valid')],
-      [State('client_lname', 'value'),
-      State('client_tin', 'value'),
-      State('client_dob', 'value'),
-      State('acct_num', 'value')]
+      [State('email', 'value'),
+      State('password', 'value')]
    )
    # def get_client_data(is_client, client_lname, client_tin, client_dob):
-   def get_client_data(is_client, client_lname, client_tin, client_dob, acct_num):
+   def get_client_data(is_client, email, password):
       # if is_client is True we have a client match. 
       # Else it is false and print applicable error message from client_login function
       if is_client is not True:
@@ -92,7 +111,7 @@ def present_customer_data(app):
             *\
          FROM \
          account_master \
-         Inner Join customer_master On customer_master.cust_id = account_master.master_account_id')
+         Inner Join customer_master On customer_master.cust_id = account_master.cust_id')
 
       account_info = c.fetchall()
       if account_info is None:
@@ -119,17 +138,13 @@ def present_customer_data(app):
             END name, \
             account_master.account_number, \
             account_master.account_balance, \
-            CASE \
-               when journal_entries.Debit_amount != 0 \
-               then journal_entries.Debit_amount \
-               else journal_entries.Credit_amount \
-            END last_transaction \
+            journal_entries.transaction_amount \
          FROM \
             customer_master \
             Inner join account_master On \
-               account_master.master_account_id = customer_master.Cust_Id \
+               account_master.cust_id = customer_master.Cust_Id \
             Inner join journal_entries On \
-               journal_entries.master_account_id = account_master.master_account_id \
+               journal_entries.cust_id = account_master.cust_id \
             Where \
                customer_master.Last_name = ? and customer_master.TIN = ? and \
                customer_master.DOB = ?', \
@@ -144,19 +159,18 @@ def present_customer_data(app):
                      customer_information[2], customer_information[3])
 
 
-def client_login(app):
+def login(app):
    @app.callback(
       Output('is_client', 'data-valid'),
-      [Input('login_button', 'n_clicks')], 
-      [State('client_lname', 'value'),
-      State('client_tin', 'value'),
-      State('client_dob', 'value'),
-      State('acct_num', 'value')]
+      [Input('login_submit', 'n_clicks'),
+      Input('rec_type', 'value')], 
+      [State('email', 'value'),
+      State('password', 'value')]
    )
-   def cl_login(n, client_lname, client_tin, client_dob, acct_num):
-      def validate_data(client_lname, client_tin, client_dob):
+   def cl_login(n, rec_type, email, password):
+      def validate_data(email, password):
          # test to see if either login or password is blank
-         if client_lname is None or client_tin is None or client_dob is None:
+         if email is None or password is None:
             return False
          else:
             return True 
@@ -164,10 +178,9 @@ def client_login(app):
       # Check to make sure all required fields are entered 
       # (see def validate_data above)
       if n > 0:
-         data_ok = validate_data(client_lname, client_tin, client_dob)
+         data_ok = validate_data(email, password)
          if not data_ok:
-            # return 'Your Last Name, TIN and DOB are required'
-            return 'Your Last Name, TIN and DOB are required'
+            return 'Your email address and password are required'
 
          # Data was entered into both the login and password fields. 
          # Check for record in Login table
@@ -175,28 +188,48 @@ def client_login(app):
          Base = declarative_base()
          conn = sqlite3.connect(reference.database)
          c = conn.cursor()
-    
-         # Check to see if this is a client - use customer master file.
+ 
+         '''Check login table to see if the record exists. If it exists, 
+         see if it is for a (C)ustomer, (E)mployee or (A)dministrator'''
          c.execute(
             'SELECT \
-               * \
+               rec_type \
             FROM \
-               Customer_Master \
-            Where \
-               Last_name = ? and TIN = ? and DOB = ?', \
-               (client_lname, client_tin, client_dob))
+               Login \
+            Where email = ? and Password = ?', \
+            (email, password))
 
-         data_set = c.fetchall()
-
-         # if nothing was returned there is no record for this person and they are not a client
-         if not data_set:
-            return "I'm sorry, there is no record for this person"
-         # Return True and look for transactional data from client in
-         # present_customer_data (above)
-         return True
+         try:
+            rec_type = c.fetchall()[0][0]
+         except:
+            return 'There is no record for this email and password combination'
+         return rec_type
 
       # this return is just here so that Dash does not produce an error. 
       return no_update
+
+
+      #    # Check to see if this is a client - use customer master file.
+      #    c.execute(
+      #       'SELECT \
+      #          * \
+      #       FROM \
+      #          Customer_Master \
+      #       Where \
+      #          Last_name = ? and TIN = ? and DOB = ?', \
+      #          (client_lname, client_tin, client_dob))
+
+      #    data_set = c.fetchall()
+
+      #    # if nothing was returned there is no record for this person and they are not a client
+      #    if not data_set:
+      #       return "I'm sorry, there is no record for this person"
+      #    # Return True and look for transactional data from client in
+      #    # present_customer_data (above)
+      #    return True
+
+      # # this return is just here so that Dash does not produce an error. 
+      # return no_update
 
 
 def open_account(app):
@@ -248,27 +281,15 @@ def open_account(app):
             FROM \
                customer_master \
             Where \
-               First_name =? and Middle_initial = ? and Last_name = ? and \
+               First_name =? and Middle_initial IS ? and Last_name = ? and \
                Street_addr = ? and City = ? and State = ? and Zip_code = ? \
                and Email_addr = ? and TIN = ? and DOB = ?',\
                (fname, minit, lname, addr, city, st, zipcode, email, tin, dob))
 
          data_set = c.fetchall()
          # data_set is Null. We didn't find anything. Enter the new record in the table.
-         if not data_set:
-            # Get Id number from reference table. Increment it by 1. This will be the 
-            # reference id for the client.
-            c.execute('SELECT \
-                           * \
-                        FROM \
-                           reference_id')
-            ref_id = []
-            ref_id = c.fetchall()
 
-            # result set re_id is a tuple in a list. Make it an integer
-            # and add one to it so that the next record has a unique id
-            ref_id = ref_id[0][0] + 1
-            new_ref_id = [ref_id, datetime.now()]
+         if not data_set:
             time_stamp = datetime.now()
 
             # Getting database is locked error. 
@@ -280,11 +301,28 @@ def open_account(app):
             c = conn.cursor()
 
             # Add a new record to the customer master file
-            datalist = [ref_id, fname, minit, lname, addr, city, st, zipcode, 
+            datalist = [fname, minit, lname, addr, city, st, zipcode, 
                email, tin, dob, time_stamp]
-            c.execute('INSERT INTO `customer_master` VALUES(?, ?, ?, ?, ?, ?, ?,\
-               ?, ?, ?, ?, ?)', datalist)
+            c.execute('INSERT INTO Customer_Master (First_name, Middle_initial, Last_name, \
+               Street_addr, City, State, Zip_code, Email_addr, TIN, DOB, time_stamp) VALUES \
+               (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', datalist)
             conn.commit()
+
+            # Get master account number from customer master. It should have been automatically
+            # created (autoincrement) when the record was written...
+            c.execute(
+            'SELECT \
+               Cust_Id \
+            FROM \
+               Customer_Master \
+            Where \
+               First_name = ? and Middle_initial IS ? and Last_name = ? and \
+               Street_addr = ? and City = ? and State = ? and Zip_code = ? \
+               and Email_addr = ? and TIN = ? and DOB = ?',\
+               (fname, minit, lname, addr, city, st, zipcode, email, tin, dob))
+
+            cust_id = []
+            cust_id = c.fetchall()[0][0]
 
             # Add new record to account master file.
             # For the moment, account number will be 1 for each account - this is for the MVP
@@ -292,16 +330,13 @@ def open_account(app):
             # Account balance is 0 when you open an account.
             account_balance = 0
 
-            datalist = [ref_id, account_number, account_balance, ref_id, time_stamp]
-            c.execute('INSERT INTO `account_master` VALUES(?, ?, ?, ?, ?)', datalist)
+            datalist = [cust_id, account_number, account_balance, time_stamp]
+            c.execute('INSERT INTO account_master VALUES(?, ?, ?, ?)', datalist)
             conn.commit()
 
-            # update id and date/time stamp in reference table
-            c.execute('UPDATE `reference_id` SET ID = ?, Time_stamp = ?', (new_ref_id))
-            conn.commit()
             # Create a new record in the login table. Type will be value 'C' for customer
-            datalist = [ref_id, email, password, 'C', time_stamp ]
-            c.execute('INSERT INTO `Login` VALUES(?, ?, ?, ?, ?)', datalist)
+            datalist = [cust_id, email, password, 'C', time_stamp ]
+            c.execute('INSERT INTO Login VALUES(?, ?, ?, ?, ?)', datalist)
             conn.commit()
             c.close()
             return[f'Your information has been entered into our system'] 
@@ -336,6 +371,7 @@ def sample_portfolio(app, df_portfolio):
 
       conn = None
       try:
+         # conn = sqlite3.connect('/users/pkopp/python_diploma/capstone/dev/database/roboinvest.db')
          conn = sqlite3.connect('/roboinvest/database/roboinvest.db')
          c = conn.cursor()
       except Error as e:
@@ -482,27 +518,26 @@ def contact_layout(app):
          return ['']
 
 
-def journal_data_entry(app):
+def journal_data_entry(app, cust_info, ee_info):
    @app.callback(
       Output('journal_entry_complete', 'children'),
-      [Input('journal_submit_button', 'n_clicks')], 
-      [State('date_of_entry', 'value'),
-      State('master_account_number', 'value'),
+      [Input('journal_submit_button', 'n_clicks')],
+      [State('date_of_entry', 'date'),
+      State('customer', 'value'),
       State('acct_number', 'value'),
-      State('debit_amt', 'value'),
-      State('credit_amt', 'value'),
-      State('description', 'value'),
+      State('transaction_amount', 'value'),
+      State('transaction_type', 'value'),
       State('ee_lname', 'value'),
       State('ee_tin', 'value'),
       State('ee_dob', 'value')]
    )
-   def journal_entry(n, master_account_number, date_of_entry, acct_number, debit_amt, credit_amt, 
-      description, ee_lname, ee_tin, ee_dob):
-      def validate_data(master_account_number, date_of_entry, acct_number,
-         description, ee_lname, ee_tin, ee_dob):
+   def journal_entry(n, date_of_entry, customer, acct_number, transaction_amount,
+      transaction_type, ee_lname, ee_tin, ee_dob):
+
+      def validate_data(transaction_amount, acct_number, ee_tin, ee_dob):
          # test to see if any data is blank
-         if master_account_number is None or date_of_entry is None or acct_number is None \
-            or description is None or ee_lname is None or ee_tin is None or ee_dob is None:
+         if transaction_amount is None or acct_number is None or \
+            ee_tin is None or ee_dob is None:
             return False
          else:
             return True 
@@ -510,71 +545,75 @@ def journal_data_entry(app):
       # Check to make sure all required fields are entered 
       # (see def validate_data above)
       if n >= 1:
-         data_ok = validate_data(master_account_number, date_of_entry, acct_number,
-         description, ee_lname, ee_tin, ee_dob)
-         if not data_ok:
-            return[f'Some of the critical information is blank. Please make sure that all fields are filled in']
-
-         # Data check for debit and credit...they cannot both be 0 or both be nonzero.
-         if debit_amt is None and credit_amt is None:
-             return[f'Credit or debit amount must be greater than 0.']
-         if debit_amt is not None and credit_amt is not None:
-            return[f'Both the credit or debit amount cannot be greater than 0.']
          # Data was entered into both the login and password fields. 
          # Check for record in Login table
          engine = create_engine('sqlite:///roboinvest.db')
          Base = declarative_base()
          conn = sqlite3.connect(reference.database)
          c = conn.cursor()
-    
+
+         data_ok = validate_data(transaction_amount, acct_number, ee_tin, ee_dob)
+         if not data_ok:
+            return 'Please make sure that all information is filled in.'
+
+         # Transaction amount cannot be 0
+         if transaction_amount is None or transaction_amount < 1:
+             return 'The transaction amount must be at least $1.'
+
          # Check to see if a record for this employee. Only an employee can enter data for a client
          c.execute(
             'SELECT \
-               * \
+               ee_id, \
+               TIN, \
+               DOB \
             FROM \
                Employee_Master \
             Where \
-               Last_name = ? and TIN = ? and DOB = ?', \
+               ee_id = ? and TIN = ? and DOB = ?', \
                (ee_lname, ee_tin, ee_dob))
 
          data_set = c.fetchall()
          # data_set is Null. We didn't find anything. Issue errror message
          if not data_set:
             return 'There is no record for this employee information. Please try again.'
-         user_id = data_set[0][0]
-
-         # Get cust_id from customer_master table.
-         c.execute(\
-            'SELECT \
-               cust_id \
-            FROM \
-               customer_master \
-            Where \
-               \
-               cust_id = ?', \
-               (master_account_number))
-
-         cust_id = c.fetchall()
-         if not cust_id:
-            return 'There is no record for this customer master id'
-         cust_id = cust_id[0][0]
 
          # We've passed the tests. Write the data to the journal
          time_stamp = datetime.now()
-         datalist = [date_of_entry, master_account_number, cust_id, acct_number, 
-            debit_amt, credit_amt, description, user_id, ' ', time_stamp]
-         c.execute('INSERT INTO `journal_entries` VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', datalist)
+         # make ticker symbol ' ' as it is not used for this journal entry
+         ticker = ' '
+         datalist = [date_of_entry, customer, acct_number, transaction_type, 
+            transaction_amount, ee_lname, ticker, datetime.now()]
+         c.execute('INSERT INTO journal_entries VALUES(?, ?, ?, ?, ?, ?, ?, ?)', datalist)
          conn.commit()
-         # Update account balance in account_master file...
-         if credit_amt > 0:
-            datalist = [credit_amt, master_account_number, acct_number]
-            c.execute('UPDATE `account_master` set account_balance = account_balance + ? \
-            WHERE account_master.master_account_id = ? and \
-               account_master.account_number = ?', datalist)
+
+         # Is this a new account for the master account? if so, write a new record in the 
+         # account master table. If not, update the applicable record in the account 
+         # master table.
+         c.execute( \
+            'SELECT \
+               cust_id, \
+               account_number, \
+               account_balance \
+            FROM \
+               account_master \
+            WHERE \
+               cust_id = ? and account_number = ?',\
+               (customer, acct_number))
+         cust_acct = c.fetchall()
+         current_account_balance = cust_acct[0][2]
+
+         # new record
+         if not cust_acct:
+            datalist = [customer, acct_number, acct_balance, ee_lname, datetime.now()]
+            c.execute('INSERT INTO account_master VALUES (?,?,?,?,?)', datalist)
          else:
-            datalist = [debit_amt, master_account_number, acct_number]
-            c.execute('UPDATE `account_master` set account_balance = account_balance - ? \
-            WHERE account_master.master_account_id = ? and \
+
+            # Update account balance in account_master file...
+            new_account_balance = current_account_balance - transaction_amount \
+               if transaction_type == 'Withdrawal' else current_account_balance + transaction_amount
+            datalist = [new_account_balance, customer, acct_number]
+            c.execute('UPDATE account_master set account_balance = ? \
+            WHERE account_master.cust_id = ? and \
                account_master.account_number = ?', datalist)
          conn.commit()
 
@@ -588,10 +627,9 @@ def journal_data_entry(app):
          email = c.fetchall()
          email_addr = email[0][0]
 
-         transaction_amt = credit_amt if credit_amt > 0 else debit_amt
          message = MIMEMultipart('alternative')
          message['Subject'] = 'Email message from the Shore-Koppelman Group'
-         message_body = 'A transaction of '+str(transaction_amt)+' has been made in your account.'
+         message_body = 'A '+transaction_type+' of '+str(transaction_amount)+' has been made in your account.'
          message.attach(MIMEText(message_body, 'plain'))
 
          try:
