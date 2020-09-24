@@ -7,29 +7,26 @@ import http.client
 import json
 
 
-# Email Password and account
-password = 'NYUCapstone'
-account = 'capstone.roboinvesting@gmail.com'
+# Email Password and account. Please set up your own...
+password = 
+account = 
 
-# Recipients of emails
-# recipients = ['pbkoppelman@gmail.com', 'michael.shore93@gmail.com']
-recipients = ['pbkoppelman@gmail.com']
+# Recipients of emails. Create as a list
+recipients = []
 
 # Database connectivity to fastrack
 conn = http.client.HTTPSConnection("ftlightning.fasttrack.net")
 x = 'GET'
-y = "/v1/auth/login?account=300724&pass=1243OEIL&appid=F075C6E1-759C-4009-9B47-5FE284F31F55"
+y is account informaiton from fasttrack
 conn.request(x,y)
 res = conn.getresponse()
 data = json.loads(res.read())
 appid = data['appid']
 token = data['token']
 
-# security list
-sec_list = ["VOO", "PRULX", "VTIAX", "PFORX", "FDHY"]
+# list of securiities in the portfolio. We want their call symbols
+sec_list = []
 
 # setting paths and naming database table paths.
-# db_path = '/users/pkopp/python_diploma/Capstone/dev/apps'
-# database = r"C:\users\pkopp\python_diploma\Capstone\dev\database\roboinvest.db"
 db_path = '/roboinvest/apps'
 database = r"C:\roboinvest\database\roboinvest.db"
