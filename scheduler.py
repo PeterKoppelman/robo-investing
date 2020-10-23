@@ -1,75 +1,89 @@
+'''this is the scheduler program for the roboinvest system
+Peter Koppelman September 30, 2020'''
+
 import http.client
-from reference import appid, token
 import json
-from datetime import datetime
-from sqlalchemy import Column, Date, String, create_engine
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
 import sqlite3
-from threading import Timer
+import sys
+from datetime import datetime
+from datetime import date
+from reference import appid, token
 
 import reference
 
-x = datetime.today()
-y = x.replace(day = x.day + 1, hour = 18, minute = 45, second = 0, microsecond = 0)
-delta_t = y - x
 
-secs = delta_t.seconds+1
+def scheduler():
+    # only run this Monday - Friday. 0 = Monday, 4 = Friday
+    dow = datetime.today().weekday()
+    if dow > 4:
+        print("It's the weekend - scheduluer does not run")
+        sys.exit("It's the weekend - scheduluer does not run")
+        return
 
-class Financial_Data:
+    try:
+        connect = sqlite3.connect(reference.database)
+        cursor = connect.cursor()
+    except sqlite3.OperationalError:
+        print('There was a problem opening up the roboinvest database')
+        sys.exit('There was a problem opening up the roboinvest database')
+        return
 
-    def ft_query():
-        engine = create_engine('sqlite:///roboinvest.db')
-        Base = declarative_base()
-        conn_sql = sqlite3.connect(reference.database)
-        # conn_sql = sqlite3.connect('roboinvest.db')
-        c = conn_sql.cursor()
+    headers = {
+        'appid': reference.appid,
+        'token': reference.token
+    }
 
-      	c.execute(
-        	'SELECT \
-         		count \
-        	FROM \
-            	price_history \
-        	Where count = (select max(count) from price_history)')
-      	
-      	# Get count from price history table and increment it by one
- 		mcount = []
-		mcount = c.fetchall()
-		mcount = mcount[0][0] + 1
+    for sec in reference.sec_list:
+        cursor.execute(
+            'SELECT \
+                sec, \
+                count, \
+                As_of_Date \
+            FROM \
+                price_history \
+            Where count = (select max(count) from price_history where Sec = ?) and \
+                Sec = ?', (sec, sec))
 
-        # now = str(datetime.now()).replace(':', '-').replace(' ', '-').replace('.', '-')
-        # timestamp = datetime.now()
-        conn = http.client.HTTPSConnection("ftlightning.fasttrack.net")
-        headers = {
-                'appid': appid,
-                'token': token
-                }
+        # Get count from price history table and increment it by one
+        minfo = cursor.fetchall()
+        mcount = minfo[0][1] + 1
+        most_recent_date = minfo[0][2]
+ 
+        # Get data from vendor
+        try:
+            conn_ft = http.client.HTTPSConnection("ftl.fasttrack.net")
+            conn_ft.request("GET",
+                "/v1/data/" + sec + "/range?d=2099-12-31", headers=headers)
+        except:
+            print('Could not connect to the vendor database')
+            sys.exit('Could not connec to the vendor database')
+            return
 
-        for sec in reference.sec_list:
+        res = conn_ft.getresponse()
+        data = res.read()
+        dic = json.loads(data)
 
-            # sec_data = []
+        for i, j in enumerate(dic['datarange']):
+            # if the most recent date in the database is the same as the date that we got from
+            # the vendor, we're getting data that we already have. This may be due to the vendor
+            # not updating data or that the current date is a holiday.
+            # Peter Koppelman Sept 29, 2020
+            if j.get('date').get('strdate') == most_recent_date:
+                print('Close data has the same date as the most recent information for '+sec+
+                    ' in the price history table')
+                continue
 
-            # Get data from vendor
-            conn.request("GET", "/v1/data/" + sec + "/range?d=12%F12%F2099&adj=&olhv=0", headers=headers)
-            res = conn.getresponse()
-            data = res.read()
-            dic = json.loads(data)
-            for ix in range(len(dic['datarange'])):
+			# Create list for data entry into price history table.
+            list_col = []
+            list_col.append(j.get('date').get('strdate'))
+            list_col.append(sec)
+            list_col.append(j.get('price'))
+            list_col.append(mcount)
+            list_col.append(datetime.now())
 
-            	# Create list for data entry into price history table.
-				list_col = []
-				list_col.append(dic['datarange'][ix]['date']['strdate'])
-				list_col.append(sec)
-				list_col.append(dic['datarange'][ix]['price'])
-				list_col.append(mcount)
-				list_col.append(datetime.now())
+            cursor.execute('INSERT INTO price_history VALUES(?, ?, ?, ?, ?)', list_col)
+            connect.commit()
+    cursor.close()
 
-                try:
-                	c.execute('INSERT INTO ' + table_name + ' VALUES(?, ?, ?, ?, ?)', list_col)
-                    conn_sql.commit()
-                except:
-                    pass
-        c.close()
-
-t = Timer(secs, Financial_Data.ft_query, args=())
-t.start()
+if __name__ == "__main__":
+    scheduler()
